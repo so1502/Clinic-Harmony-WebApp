@@ -78,12 +78,54 @@
     --sidebar-ring: oklch(0.556 0 0)
   }
   * {
-    @apply border-border outline-ring/50;
+    border-color: var(--border);
   }
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--background);
+    color: var(--foreground);
   }
   html {
     @apply font-sans;
   }
+}
+
+/* Custom React Big Calendar Styles */
+.rbc-calendar {
+  @apply font-sans text-sm;
+}
+.rbc-toolbar {
+  @apply mb-4 pb-4 border-b border-slate-100;
+}
+.rbc-toolbar button {
+  @apply text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-md px-3 py-1.5 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 mx-1;
+}
+.rbc-toolbar button.rbc-active {
+  @apply bg-blue-50 text-blue-700 border-blue-200 shadow-sm;
+}
+.rbc-header {
+  @apply py-2 font-medium text-slate-600 border-b border-slate-200 bg-slate-50/50;
+}
+.rbc-today {
+  @apply bg-blue-50/20;
+}
+.rbc-event {
+  @apply rounded-md overflow-hidden transition-shadow hover:shadow-md;
+}
+.rbc-time-view, .rbc-month-view, .rbc-agenda-view {
+  @apply border-slate-200 rounded-lg overflow-hidden bg-white;
+}
+.rbc-day-slot .rbc-time-slot {
+  @apply border-t border-slate-100;
+}
+.rbc-time-header.rbc-overflowing {
+  @apply border-r-0;
+}
+.rbc-time-content {
+  @apply border-t border-slate-200;
+}
+.rbc-timeslot-group {
+  @apply border-b border-slate-200;
+}
+.rbc-time-gutter .rbc-timeslot-group {
+  @apply border-b-0 border-r border-slate-200 bg-slate-50 text-slate-500 font-medium text-xs;
 }
