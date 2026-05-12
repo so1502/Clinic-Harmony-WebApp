@@ -4,10 +4,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Info } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
-import type {  Room  } from "@/types";
+import type { Room, Equipment } from "@/types";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -29,14 +29,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 
 const roomSchema = (t: any) => z.object({
   name: z.string().min(1, t('common.required')),
   capacity: z.coerce.number().min(1, t('common.required')),
-  equipment: z.string().optional(),
+  equipment_ids: z.array(z.string()).default([]),
 });
 
-type RoomFormValues = z.infer<typeof roomSchema>;
+type RoomFormValues = z.infer<ReturnType<typeof roomSchema>>;
 
 export default function RoomsPage() {
   const { t } = useTranslation();
@@ -45,27 +46,50 @@ export default function RoomsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<any>({
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting } } = useForm<RoomFormValues>({
     resolver: zodResolver(roomSchema(t)),
     defaultValues: {
       name: "",
       capacity: 1,
-      equipment: "",
+      equipment_ids: [],
     }
   });
 
-  // Fetch Rooms
-  const { data: rooms, isLoading } = useQuery({
+  const selectedEquipmentIds = watch("equipment_ids");
+
+  // Fetch Rooms with Equipment
+  const { data: rooms, isLoading: isLoadingRooms } = useQuery({
     queryKey: ["rooms", activeClinicId],
     queryFn: async () => {
       if (!activeClinicId) return [];
       const { data, error } = await supabase
         .from("rooms")
+        .select(`
+          *,
+          room_equipment (
+            equipment (*)
+          )
+        `)
+        .eq("clinic_id", activeClinicId)
+        .order("name");
+      if (error) throw error;
+      return data as any[];
+    },
+    enabled: !!activeClinicId,
+  });
+
+  // Fetch All Available Equipment
+  const { data: equipmentList } = useQuery({
+    queryKey: ["equipment", activeClinicId],
+    queryFn: async () => {
+      if (!activeClinicId) return [];
+      const { data, error } = await supabase
+        .from("equipment")
         .select("*")
         .eq("clinic_id", activeClinicId)
         .order("name");
       if (error) throw error;
-      return data as Room[];
+      return data as Equipment[];
     },
     enabled: !!activeClinicId,
   });
@@ -75,16 +99,13 @@ export default function RoomsPage() {
     mutationFn: async (values: RoomFormValues) => {
       if (!activeClinicId) throw new Error("Keine Klinik ausgewählt");
       
-      const equipmentArray = values.equipment 
-        ? values.equipment.split(",").map(e => e.trim()).filter(Boolean) 
-        : [];
-
       const roomData = {
         clinic_id: activeClinicId,
         name: values.name,
         capacity: values.capacity,
-        equipment: equipmentArray,
       };
+
+      let roomId = editingRoom?.id;
 
       if (editingRoom) {
         const { error } = await supabase
@@ -93,10 +114,35 @@ export default function RoomsPage() {
           .eq("id", editingRoom.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("rooms")
-          .insert([roomData]);
+          .insert([roomData])
+          .select()
+          .single();
         if (error) throw error;
+        roomId = data.id;
+      }
+
+      // Handle Equipment Junction
+      if (roomId) {
+        // Delete existing
+        const { error: delError } = await supabase
+          .from("room_equipment")
+          .delete()
+          .eq("room_id", roomId);
+        if (delError) throw delError;
+
+        // Insert new
+        if (values.equipment_ids.length > 0) {
+          const junctionData = values.equipment_ids.map(eid => ({
+            room_id: roomId,
+            equipment_id: eid,
+          }));
+          const { error: insError } = await supabase
+            .from("room_equipment")
+            .insert(junctionData);
+          if (insError) throw insError;
+        }
       }
     },
     onSuccess: () => {
@@ -130,20 +176,30 @@ export default function RoomsPage() {
     saveRoomMutation.mutate(data);
   };
 
-  const openEditDialog = (room: Room) => {
+  const openEditDialog = (room: any) => {
     setEditingRoom(room);
+    const equipIds = room.room_equipment?.map((re: any) => re.equipment?.id).filter(Boolean) || [];
     reset({
       name: room.name,
       capacity: room.capacity,
-      equipment: room.equipment ? room.equipment.join(", ") : "",
+      equipment_ids: equipIds,
     });
     setIsDialogOpen(true);
   };
 
   const openCreateDialog = () => {
     setEditingRoom(null);
-    reset({ name: "", capacity: 1, equipment: "" });
+    reset({ name: "", capacity: 1, equipment_ids: [] });
     setIsDialogOpen(true);
+  };
+
+  const toggleEquipment = (id: string) => {
+    const current = selectedEquipmentIds || [];
+    if (current.includes(id)) {
+      setValue("equipment_ids", current.filter(cid => cid !== id));
+    } else {
+      setValue("equipment_ids", [...current, id]);
+    }
   };
 
   if (!activeClinicId) {
@@ -177,7 +233,7 @@ export default function RoomsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
+            {isLoadingRooms ? (
               <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center">
                   <Loader2 className="mx-auto h-6 w-6 animate-spin text-slate-300" />
@@ -194,8 +250,18 @@ export default function RoomsPage() {
                 <TableRow key={room.id}>
                   <TableCell className="font-medium text-slate-900">{room.name}</TableCell>
                   <TableCell>{room.capacity}</TableCell>
-                  <TableCell className="text-slate-500">
-                    {room.equipment?.join(", ") || "-"}
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {room.room_equipment && room.room_equipment.length > 0 ? (
+                        room.room_equipment.map((re: any) => (
+                          <Badge key={re.equipment?.id} variant={re.equipment?.status === 'maintenance' ? 'warning' : 'secondary'} className="text-[10px] px-1.5 py-0">
+                            {re.equipment?.name}
+                          </Badge>
+                        ))
+                      ) : (
+                        <span className="text-slate-400 text-xs">-</span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" onClick={() => openEditDialog(room)}>
@@ -240,10 +306,43 @@ export default function RoomsPage() {
                 <Input id="capacity" type="number" {...register("capacity")} />
                 {errors.capacity && <p className="text-sm text-red-500">{errors.capacity.message as string}</p>}
               </div>
+              
               <div className="grid gap-2">
-                <Label htmlFor="equipment">{t('rooms.table.equipment')}</Label>
-                <Input id="equipment" {...register("equipment")} placeholder={t('rooms.form.equipmentPlaceholder')} />
-                {errors.equipment && <p className="text-sm text-red-500">{errors.equipment.message as string}</p>}
+                <Label>{t('rooms.table.equipment')}</Label>
+                <div className="border rounded-md p-3 max-h-[200px] overflow-y-auto space-y-2 bg-slate-50/50">
+                  {equipmentList && equipmentList.length > 0 ? (
+                    equipmentList.map((item) => (
+                      <div key={item.id} className="flex items-center space-x-2">
+                        <input 
+                          type="checkbox"
+                          id={`equip-${item.id}`}
+                          checked={selectedEquipmentIds?.includes(item.id)}
+                          onChange={() => toggleEquipment(item.id)}
+                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600"
+                        />
+                        <label 
+                          htmlFor={`equip-${item.id}`}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center"
+                        >
+                          {item.name}
+                          {item.status === 'maintenance' && (
+                            <Badge variant="warning" className="ml-2 scale-75 origin-left">
+                              {t('equipment.status.maintenance')}
+                            </Badge>
+                          )}
+                        </label>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-slate-500 text-center py-4 italic">
+                      {t('equipment.messages.empty')}
+                    </p>
+                  )}
+                </div>
+                <p className="text-[10px] text-slate-400 flex items-center">
+                  <Info className="h-3 w-3 mr-1" />
+                  {t('rooms.form.equipmentPlaceholder')}
+                </p>
               </div>
             </div>
              <DialogFooter>

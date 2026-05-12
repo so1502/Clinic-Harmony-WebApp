@@ -99,6 +99,7 @@
       "team": "Team",
       "therapyTypes": "Therapiearten",
       "rooms": "Räume",
+      "equipment": "Ausstattung",
       "clinicManagement": "Klinikverwaltung"
     },
     "user": {
@@ -301,6 +302,45 @@
       "confirmDelete": "Wirklich löschen?",
       "empty": "Keine Räume gefunden.",
       "selectClinic": "Bitte wählen Sie eine Klinik aus oder erstellen Sie eine, um Räume zu verwalten."
+    }
+  },
+  "equipment": {
+    "title": "Ausstattung & Geräte",
+    "subtitle": "Verwalten Sie die medizinischen Geräte Ihrer Klinik.",
+    "add": "Gerät hinzufügen",
+    "edit": "Gerät bearbeiten",
+    "create": "Neues Gerät anlegen",
+    "status": {
+      "active": "Aktiv",
+      "maintenance": "Wartung"
+    },
+    "form": {
+      "name": "Gerätename",
+      "description": "Beschreibung",
+      "status": "Status",
+      "namePlaceholder": "z.B. Ultraschallgerät",
+      "descriptionPlaceholder": "Seriennummer oder Details"
+    },
+    "table": {
+      "name": "Name",
+      "description": "Details",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "messages": {
+      "successCreate": "Gerät erstellt!",
+      "successUpdate": "Gerät aktualisiert!",
+      "successDelete": "Gerät gelöscht!",
+      "confirmDelete": "Gerät wirklich löschen?",
+      "empty": "Keine Geräte gefunden.",
+      "selectClinic": "Bitte wählen Sie eine Klinik aus, um Geräte zu verwalten."
+    },
+    "scheduling": {
+      "required": "Benötigte Ausstattung",
+      "onlyAvailable": "Nur verfügbare Räume anzeigen",
+      "seeAll": "Alle Räume anzeigen",
+      "warningMaintenance": "Buchung nicht möglich: Gerät {{name}} befindet sich in der Wartung.",
+      "warningMissing": "Buchung nicht möglich: Raum verfügt nicht über {{name}}."
     }
   },
   "therapyTypes": {
