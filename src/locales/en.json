@@ -1,0 +1,386 @@
+{
+  "landing": {
+    "hero": {
+      "title": "Streamline Your Therapy Practice",
+      "subtitle": "The complete management system for therapy clinics. Manage patients, therapists, rooms, and schedules with ease.",
+      "getStarted": "Get Started",
+      "learnMore": "Learn More",
+      "platformTag": "Secure Multi-Tenant Platform"
+    },
+    "features": {
+      "title": "Everything You Need",
+      "subtitle": "Built specifically for therapy clinics, with features that matter.",
+      "smartScheduling": {
+        "title": "Smart Scheduling",
+        "description": "Intuitive calendar with drag-and-drop appointments and conflict prevention."
+      },
+      "patientManagement": {
+        "title": "Patient Management",
+        "description": "Full patient records with medical history and appointment tracking."
+      },
+      "roleAccess": {
+        "title": "Role-Based Access",
+        "description": "Secure multi-tenant system with admin, therapist, and receptionist roles."
+      },
+      "realtime": {
+        "title": "Real-time Updates",
+        "description": "Live calendar updates ensure everyone sees the latest schedule."
+      }
+    },
+    "benefits": {
+      "title": "Built for Modern Clinics",
+      "description": "Our platform handles the complexity of operating multiple clinics, giving you peace of mind that your scheduling is always accurate and secure.",
+      "list": {
+        "doubleBooking": "Prevent double-bookings automatically",
+        "multiClinic": "Multi-clinic support with data isolation",
+        "therapistView": "Therapist-specific appointment views",
+        "resourceMgmt": "Room and resource management"
+      }
+    },
+    "cta": {
+      "title": "Ready to Transform Your Clinic?",
+      "subtitle": "Join clinics already using Clinic Harmony to streamline their operations.",
+      "startTrial": "Start Free Trial"
+    },
+    "footer": {
+      "copyright": "© 2024 Clinic Harmony. Built for therapy clinics."
+    },
+    "header": {
+      "login": "Login",
+      "register": "Register"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Sign In",
+      "subtitle": "Enter your credentials to access your dashboard.",
+      "email": "Email",
+      "password": "Password",
+      "forgotPassword": "Forgot password?",
+      "submit": "Sign In",
+      "noAccount": "Don't have an account?",
+      "register": "Register now",
+      "success": "Logged in successfully!",
+      "error": "Error during login."
+    },
+    "register": {
+      "title": "Create Account",
+      "subtitle": "Create an account for your clinic.",
+      "fullName": "Full Name",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Create Account",
+      "hasAccount": "Already have an account?",
+      "login": "Sign in now",
+      "success": "Registration successful! Please sign in.",
+      "error": "Error during registration."
+    },
+    "validation": {
+      "email": "Valid email required",
+      "password": "Password must be at least 6 characters long",
+      "fullName": "Name must be at least 2 characters long"
+    }
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "required": "Required",
+    "unknown": "Unknown",
+    "loading": "Loading...",
+    "actions": "Actions"
+  },
+  "dashboard": {
+    "nav": {
+      "home": "Dashboard",
+      "calendar": "Calendar",
+      "patients": "Patients",
+      "team": "Team",
+      "therapyTypes": "Therapy Types",
+      "rooms": "Rooms",
+      "clinicManagement": "Clinic Management"
+    },
+    "user": {
+      "selectClinic": "Select Clinic",
+      "logout": "Logout",
+      "user": "User",
+      "guest": "Guest"
+    }
+  },
+  "roles": {
+    "clinic_admin": "Clinic Admin",
+    "therapist": "Therapist",
+    "receptionist": "Receptionist",
+    "scheduler": "Scheduler",
+    "viewer": "Viewer",
+    "system_admin": "System Admin",
+    "none": "No Role"
+  },
+  "patients": {
+    "title": "Patients",
+    "subtitle": "Manage the patient database.",
+    "add": "Add Patient",
+    "edit": "Edit Patient",
+    "create": "Create New Patient",
+    "form": {
+      "demographics": "Demographics",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "dob": "Date of Birth",
+      "gender": {
+        "label": "Gender",
+        "select": "Select...",
+        "male": "Male",
+        "female": "Female",
+        "other": "Other"
+      },
+      "ssn": "SSN",
+      "svn": "SVN",
+      "language": "Language",
+      "contactAddress": "Contact & Address",
+      "email": "Email",
+      "phone": "Phone",
+      "street": "Street",
+      "houseNumber": "No.",
+      "postalCode": "Zip Code",
+      "zipCode": "Zip Code",
+      "city": "City",
+      "state": "State",
+      "stateUS": "State",
+      "country": "Country",
+      "insurance": "Insurance",
+      "provider": "Insurance Provider",
+      "number": "Policy Number",
+      "insuranceNumber": "Policy Number",
+      "group": "Group Number",
+      "emergency": "Emergency Contact",
+      "contactName": "Contact Name",
+      "contactPerson": "Contact Name",
+      "contactPhone": "Contact Phone",
+      "additional": "Additional Information",
+      "other": "Additional Information",
+      "preferredLanguage": "Preferred Language",
+      "notes": "Notes",
+      "description": "Enter the details of the patient. Click save when you're done."
+    },
+    "table": {
+      "name": "Name",
+      "dob": "Date of Birth",
+      "phone": "Phone",
+      "email": "Email",
+      "actions": "Actions"
+    },
+    "messages": {
+      "successCreate": "Patient created!",
+      "successUpdate": "Patient updated!",
+      "successDelete": "Patient deleted!",
+      "confirmDelete": "Are you sure you want to delete this patient?",
+      "empty": "No patients found.",
+      "selectClinic": "Please select a clinic to manage patients."
+    }
+  },
+  "team": {
+    "title": "Team Management",
+    "subtitle": "Manage your team members and roles.",
+    "add": "Invite Member",
+    "invite": "Invite Team Member",
+    "edit": "Edit Role",
+    "form": {
+      "email": "Email Address",
+      "role": "Role",
+      "description": "Send an invitation to a new team member.",
+      "editDescription": "Adjust the role of the team member.",
+      "editRole": "Edit Role",
+      "editSubtitle": "Adjust the role of {{name}}.",
+      "roleSelect": "Select Role...",
+      "placeholderEmail": "email@example.com"
+    },
+    "tabs": {
+      "members": "Members",
+      "invitations": "Pending Invitations"
+    },
+    "table": {
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "actions": "Actions",
+      "invitedBy": "Invited by",
+      "date": "Date"
+    },
+    "messages": {
+      "successInvite": "Invitation sent!",
+      "successUpdate": "Role updated!",
+      "successDelete": "Member removed!",
+      "successCancelInvite": "Invitation cancelled!",
+      "confirmRemove": "Are you sure you want to remove {{name}} from the team?",
+      "confirmCancel": "Are you sure you want to cancel this invitation?",
+      "confirmRevoke": "Are you sure you want to cancel this invitation?",
+      "emptyMembers": "No team members found.",
+      "emptyInvites": "No pending invitations."
+    }
+  },
+  "calendar": {
+    "title": "Calendar",
+    "subtitle": "Schedule, move and manage appointments.",
+    "newEvent": "New Appointment",
+    "editEvent": "Edit Appointment",
+    "eventDetails": "Appointment Details",
+    "form": {
+      "patient": "Patient",
+      "patientSelect": "Select patient...",
+      "therapist": "Therapist",
+      "therapistSelect": "Select therapist...",
+      "therapyType": "Therapy Type",
+      "therapyTypeSelect": "Select therapy type...",
+      "room": "Room",
+      "roomSelect": "Select room...",
+      "date": "Date",
+      "from": "From",
+      "to": "To",
+      "startTime": "Start Time",
+      "endTime": "End Time",
+      "status": "Status",
+      "notes": "Notes",
+      "notesPlaceholder": "Additional notes...",
+      "select": "Select...",
+      "none": "None"
+    },
+    "status": {
+      "scheduled": "Scheduled",
+      "confirmed": "Confirmed",
+      "in_progress": "In Progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "no_show": "No Show"
+    },
+    "messages": {
+      "successCreate": "Appointment created!",
+      "successUpdate": "Appointment updated!",
+      "successDelete": "Appointment deleted!",
+      "confirmDelete": "Are you sure you want to delete this appointment?",
+      "errorSave": "Error saving appointment.",
+      "today": "Today",
+      "previous": "Previous",
+      "next": "Next",
+      "month": "Month",
+      "week": "Week",
+      "day": "Day",
+      "agenda": "Agenda",
+      "date": "Date",
+      "time": "Time",
+      "event": "Appointment",
+      "noEventsInRange": "No appointments in this range",
+      "selectClinic": "Please select a clinic to see the calendar."
+    }
+  },
+  "rooms": {
+    "title": "Rooms",
+    "subtitle": "Manage your clinic's available rooms.",
+    "add": "Add Room",
+    "edit": "Edit Room",
+    "create": "Create New Room",
+    "form": {
+      "description": "Enter the details of the room. Click save when you're done.",
+      "namePlaceholder": "e.g. Treatment Room 1",
+      "equipmentPlaceholder": "e.g. Table, Ultrasound",
+      "name": "Room Name",
+      "capacity": "Capacity",
+      "equipment": "Equipment"
+    },
+    "table": {
+      "name": "Room Name",
+      "capacity": "Capacity",
+      "equipment": "Equipment",
+      "actions": "Actions"
+    },
+    "messages": {
+      "successCreate": "Room created!",
+      "successUpdate": "Room updated!",
+      "successDelete": "Room deleted!",
+      "confirmDelete": "Are you sure you want to delete this room?",
+      "empty": "No rooms found.",
+      "selectClinic": "Please select a clinic or create one to manage rooms."
+    }
+  },
+  "therapyTypes": {
+    "title": "Therapy Types",
+    "subtitle": "Manage the treatments offered.",
+    "add": "Add Therapy Type",
+    "edit": "Edit Therapy Type",
+    "create": "Create New Therapy Type",
+    "form": {
+      "description": "Adjust the details of the therapy type.",
+      "namePlaceholder": "e.g. Physiotherapy",
+      "descriptionPlaceholder": "Short description"
+    },
+    "table": {
+      "color": "Color",
+      "name": "Name",
+      "duration": "Duration (Min)",
+      "description": "Description",
+      "actions": "Actions"
+    },
+    "messages": {
+      "successCreate": "Therapy type created!",
+      "successUpdate": "Therapy type updated!",
+      "successDelete": "Therapy type deleted!",
+      "confirmDelete": "Are you sure you want to delete this therapy type?",
+      "empty": "No therapy types found."
+    }
+  },
+  "clinics": {
+    "title": "Clinic Management",
+    "subtitle": "System-wide management of all clinics.",
+    "add": "Add Clinic",
+    "edit": "Edit Clinic",
+    "create": "Create New Clinic",
+    "form": {
+      "description": "Enter the basic data of the clinic.",
+      "namePlaceholder": "e.g. Sunrise Rehab Clinic",
+      "adminEmail": "Initial Clinic Admin (Email)",
+      "adminDescription": "The user will automatically receive admin rights once they register."
+    },
+    "table": {
+      "name": "Clinic Name",
+      "contact": "Contact",
+      "address": "Address",
+      "actions": "Actions"
+    },
+    "messages": {
+      "successCreate": "Clinic created!",
+      "successUpdate": "Clinic updated!",
+      "successDelete": "Clinic deleted!",
+      "confirmDelete": "Are you sure you want to delete this clinic?",
+      "empty": "No clinics found.",
+      "accessDenied": "Access denied. System administrators only.",
+      "inviteSuccess": "Invitation to {{email}} has been scheduled.",
+      "inviteError": "Clinic created, but invitation could not be saved."
+    }
+  },
+  "home": {
+    "selectClinic": "Please select a clinic.",
+    "greeting": "Welcome back, {{name}}!",
+    "overview": "Overview for {{date}}",
+    "kpis": {
+      "patients": "Total Patients",
+      "appointments": "Today's Appointments",
+      "therapists": "Active Therapists",
+      "rooms": "Available Rooms"
+    },
+    "appointments": {
+      "title": "Today's Appointments",
+      "subtitle": "The next upcoming treatments.",
+      "viewAll": "View all",
+      "loading": "Loading appointments...",
+      "empty": "No appointments scheduled for today."
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "subtitle": "Frequently used functions.",
+      "newAppointment": "New Appointment",
+      "addPatient": "Add Patient",
+      "manageTeam": "Manage Team"
+    }
+  }
+}

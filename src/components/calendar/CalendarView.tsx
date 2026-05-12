@@ -4,6 +4,7 @@ import type { View } from 'react-big-calendar';
 import withDragAndDropModule from 'react-big-calendar/lib/addons/dragAndDrop';
 import moment from 'moment';
 import 'moment/locale/de';
+import { useTranslation } from 'react-i18next';
 import type {  Appointment  } from "@/types";
 import { supabase } from '@/lib/supabase';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -14,7 +15,6 @@ import { checkAppointmentConflicts } from '@/services/scheduling';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 
-moment.locale('de');
 const localizer = momentLocalizer(moment);
 const withDragAndDrop = (withDragAndDropModule as any).default || withDragAndDropModule;
 const DnDCalendar = withDragAndDrop(Calendar);
@@ -35,7 +35,14 @@ interface CalendarViewProps {
 }
 
 export function CalendarView({ appointments, activeClinicId, onSelectEvent, onSelectSlot }: CalendarViewProps) {
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
+
+  // Set moment locale based on i18next language
+  useMemo(() => {
+    moment.locale(i18n.language);
+  }, [i18n.language]);
+
   const [view, setView] = useState<View>(Views.WEEK);
   const [date, setDate] = useState(new Date());
 
@@ -43,7 +50,7 @@ export function CalendarView({ appointments, activeClinicId, onSelectEvent, onSe
   const events: CalendarEvent[] = useMemo(() => {
     return appointments.map((apt) => ({
       id: apt.id,
-      title: `${apt.patients?.full_name || 'Unbekannt'} - ${apt.therapy_types?.name || 'Termin'}`,
+      title: `${apt.patients?.full_name || t('common.unknown')} - ${apt.therapy_types?.name || t('calendar.form.none')}`,
       start: new Date(apt.start_time),
       end: new Date(apt.end_time),
       resource: apt,
@@ -52,7 +59,7 @@ export function CalendarView({ appointments, activeClinicId, onSelectEvent, onSe
 
   const updateAppointmentMutation = useMutation({
     mutationFn: async ({ id, start, end, therapist_id, room_id }: { id: string; start: Date; end: Date; therapist_id: string; room_id: string | null }) => {
-      if (!activeClinicId) throw new Error("Keine Klinik ausgewählt");
+      if (!activeClinicId) throw new Error(t('patients.messages.selectClinic'));
 
       // Check for conflicts
       const conflict = await checkAppointmentConflicts(
@@ -80,10 +87,10 @@ export function CalendarView({ appointments, activeClinicId, onSelectEvent, onSe
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      toast.success('Termin verschoben!');
+      toast.success(t('calendar.messages.successUpdate'));
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Fehler beim Verschieben des Termins');
+      toast.error(error.message || t('calendar.messages.errorSave'));
     }
   });
 
@@ -156,17 +163,17 @@ export function CalendarView({ appointments, activeClinicId, onSelectEvent, onSe
         min={new Date(0, 0, 0, 7, 0, 0)} // Starts at 7 AM
         max={new Date(0, 0, 0, 20, 0, 0)} // Ends at 8 PM
         messages={{
-          today: 'Heute',
-          previous: 'Zurück',
-          next: 'Weiter',
-          month: 'Monat',
-          week: 'Woche',
-          day: 'Tag',
-          agenda: 'Agenda',
-          date: 'Datum',
-          time: 'Zeit',
-          event: 'Termin',
-          noEventsInRange: 'Keine Termine in diesem Zeitraum',
+          today: t('calendar.messages.today'),
+          previous: t('calendar.messages.previous'),
+          next: t('calendar.messages.next'),
+          month: t('calendar.messages.month'),
+          week: t('calendar.messages.week'),
+          day: t('calendar.messages.day'),
+          agenda: t('calendar.messages.agenda'),
+          date: t('calendar.messages.date'),
+          time: t('calendar.messages.time'),
+          event: t('calendar.messages.event'),
+          noEventsInRange: t('calendar.messages.noEventsInRange'),
         }}
         eventPropGetter={eventStyleGetter}
         className="font-sans text-slate-700"

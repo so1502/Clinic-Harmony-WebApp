@@ -1,0 +1,386 @@
+{
+  "landing": {
+    "hero": {
+      "title": "Optimieren Sie Ihre Therapie-Praxis",
+      "subtitle": "Das komplette Terminmanagement-System für Therapie-Kliniken. Verwalten Sie Patienten, Therapeuten, Räume und Zeitpläne mit Leichtigkeit.",
+      "getStarted": "Jetzt starten",
+      "learnMore": "Mehr erfahren",
+      "platformTag": "Sichere Multi-Mandanten-Plattform"
+    },
+    "features": {
+      "title": "Alles was Sie brauchen",
+      "subtitle": "Speziell für Therapie-Kliniken entwickelt, mit Funktionen, die wirklich zählen.",
+      "smartScheduling": {
+        "title": "Intelligente Planung",
+        "description": "Intuitiver Kalender mit Drag-and-Drop Terminen und Konfliktvermeidung."
+      },
+      "patientManagement": {
+        "title": "Patientenverwaltung",
+        "description": "Vollständige Patientenakten mit Krankengeschichte und Terminverfolgung."
+      },
+      "roleAccess": {
+        "title": "Rollenbasierter Zugriff",
+        "description": "Sicheres mandantenfähiges System mit Admin-, Therapeuten- und Empfangsrollen."
+      },
+      "realtime": {
+        "title": "Echtzeit-Updates",
+        "description": "Live-Kalender-Updates stellen sicher, dass jeder den neuesten Zeitplan sieht."
+      }
+    },
+    "benefits": {
+      "title": "Entwickelt für moderne Kliniken",
+      "description": "Unsere Plattform bewältigt die Komplexität des Betriebs mehrerer Kliniken und gibt Ihnen die Gewissheit, dass Ihre Planung immer genau und sicher ist.",
+      "list": {
+        "doubleBooking": "Doppelbuchungen automatisch verhindern",
+        "multiClinic": "Multi-Klinik-Unterstützung mit Datenisolierung",
+        "therapistView": "Therapeutenspezifische Terminansichten",
+        "resourceMgmt": "Raum- und Ressourcenmanagement"
+      }
+    },
+    "cta": {
+      "title": "Bereit, Ihre Klinik zu transformieren?",
+      "subtitle": "Schließen Sie sich Kliniken an, die Clinic Harmony bereits nutzen, um ihren Betrieb zu rationalisieren.",
+      "startTrial": "Kostenlos testen"
+    },
+    "footer": {
+      "copyright": "© 2024 Clinic Harmony. Entwickelt für Therapie-Kliniken."
+    },
+    "header": {
+      "login": "Anmelden",
+      "register": "Registrieren"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Anmelden",
+      "subtitle": "Geben Sie Ihre Daten ein, um auf Ihr Dashboard zuzugreifen.",
+      "email": "E-Mail",
+      "password": "Passwort",
+      "forgotPassword": "Passwort vergessen?",
+      "submit": "Anmelden",
+      "noAccount": "Noch kein Konto?",
+      "register": "Jetzt registrieren",
+      "success": "Erfolgreich angemeldet!",
+      "error": "Fehler beim Anmelden."
+    },
+    "register": {
+      "title": "Konto erstellen",
+      "subtitle": "Erstellen Sie ein Konto für Ihre Klinik.",
+      "fullName": "Vollständiger Name",
+      "email": "E-Mail",
+      "password": "Passwort",
+      "submit": "Konto erstellen",
+      "hasAccount": "Bereits ein Konto?",
+      "login": "Jetzt anmelden",
+      "success": "Registrierung erfolgreich! Bitte melden Sie sich an.",
+      "error": "Fehler bei der Registrierung."
+    },
+    "validation": {
+      "email": "Gültige E-Mail erforderlich",
+      "password": "Passwort muss mindestens 6 Zeichen lang sein",
+      "fullName": "Name muss mindestens 2 Zeichen lang sein"
+    }
+  },
+  "common": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "required": "Erforderlich",
+    "unknown": "Unbekannt",
+    "loading": "Lädt...",
+    "actions": "Aktionen"
+  },
+  "dashboard": {
+    "nav": {
+      "home": "Dashboard",
+      "calendar": "Kalender",
+      "patients": "Patienten",
+      "team": "Team",
+      "therapyTypes": "Therapiearten",
+      "rooms": "Räume",
+      "clinicManagement": "Klinikverwaltung"
+    },
+    "user": {
+      "selectClinic": "Klinik auswählen",
+      "logout": "Abmelden",
+      "user": "Benutzer",
+      "guest": "Gast"
+    }
+  },
+  "roles": {
+    "clinic_admin": "Clinic Admin",
+    "therapist": "Therapeut",
+    "receptionist": "Empfang",
+    "scheduler": "Terminplaner",
+    "viewer": "Leser",
+    "system_admin": "System Admin",
+    "none": "Keine Rolle"
+  },
+  "patients": {
+    "title": "Patienten",
+    "subtitle": "Verwalten Sie die Patientendatenbank.",
+    "add": "Patient hinzufügen",
+    "edit": "Patient bearbeiten",
+    "create": "Neuen Patienten anlegen",
+    "form": {
+      "demographics": "Stammdaten",
+      "firstName": "Vorname",
+      "lastName": "Nachname",
+      "dob": "Geburtsdatum",
+      "gender": {
+        "label": "Geschlecht",
+        "select": "Wählen...",
+        "male": "Männlich",
+        "female": "Weiblich",
+        "other": "Andere"
+      },
+      "ssn": "SSN",
+      "svn": "SVN",
+      "language": "Sprache",
+      "contactAddress": "Kontakt & Adresse",
+      "email": "E-Mail",
+      "phone": "Telefon",
+      "street": "Straße",
+      "houseNumber": "Nr.",
+      "postalCode": "PLZ",
+      "zipCode": "ZIP Code",
+      "city": "Stadt",
+      "state": "Bundesland",
+      "stateUS": "State",
+      "country": "Land",
+      "insurance": "Versicherung",
+      "provider": "Versicherungsträger",
+      "number": "Versicherungsnummer",
+      "insuranceNumber": "Versicherungsnummer",
+      "group": "Versicherungsgruppe",
+      "emergency": "Notfallkontakt",
+      "contactName": "Name des Notfallkontakts",
+      "contactPerson": "Name des Notfallkontakts",
+      "contactPhone": "Telefon des Notfallkontakts",
+      "additional": "Zusätzliche Informationen",
+      "other": "Zusätzliche Informationen",
+      "preferredLanguage": "Bevorzugte Sprache",
+      "notes": "Notizen",
+      "description": "Geben Sie die Details des Patienten ein. Klicken Sie auf Speichern, wenn Sie fertig sind."
+    },
+    "table": {
+      "name": "Name",
+      "dob": "Geburtsdatum",
+      "phone": "Telefon",
+      "email": "E-Mail",
+      "actions": "Aktionen"
+    },
+    "messages": {
+      "successCreate": "Patient erstellt!",
+      "successUpdate": "Patient aktualisiert!",
+      "successDelete": "Patient gelöscht!",
+      "confirmDelete": "Möchten Sie diesen Patienten wirklich löschen?",
+      "empty": "Keine Patienten gefunden.",
+      "selectClinic": "Bitte wählen Sie eine Klinik aus, um Patienten zu verwalten."
+    }
+  },
+  "team": {
+    "title": "Team-Verwaltung",
+    "subtitle": "Verwalten Sie Ihre Teammitglieder und Rollen.",
+    "add": "Mitglied einladen",
+    "invite": "Teammitglied einladen",
+    "edit": "Rolle bearbeiten",
+    "form": {
+      "email": "E-Mail-Adresse",
+      "role": "Rolle",
+      "description": "Senden Sie eine Einladung an ein neues Teammitglied.",
+      "editDescription": "Passen Sie die Rolle des Teammitglieds an.",
+      "editRole": "Rolle bearbeiten",
+      "editSubtitle": "Passen Sie die Rolle von {{name}} an.",
+      "roleSelect": "Rolle wählen...",
+      "placeholderEmail": "email@beispiel.de"
+    },
+    "tabs": {
+      "members": "Mitglieder",
+      "invitations": "Offene Einladungen"
+    },
+    "table": {
+      "name": "Name",
+      "email": "E-Mail",
+      "role": "Rolle",
+      "actions": "Aktionen",
+      "invitedBy": "Eingeladen von",
+      "date": "Datum"
+    },
+    "messages": {
+      "successInvite": "Einladung gesendet!",
+      "successUpdate": "Rolle aktualisiert!",
+      "successDelete": "Mitglied entfernt!",
+      "successCancelInvite": "Einladung storniert!",
+      "confirmRemove": "Möchten Sie {{name}} wirklich aus dem Team entfernen?",
+      "confirmCancel": "Möchten Sie diese Einladung wirklich stornieren?",
+      "confirmRevoke": "Möchten Sie diese Einladung wirklich stornieren?",
+      "emptyMembers": "Keine Teammitglieder gefunden.",
+      "emptyInvites": "Keine offenen Einladungen."
+    }
+  },
+  "calendar": {
+    "title": "Kalender",
+    "subtitle": "Termine planen, verschieben und verwalten.",
+    "newEvent": "Neuer Termin",
+    "editEvent": "Termin bearbeiten",
+    "eventDetails": "Termindetails",
+    "form": {
+      "patient": "Patient",
+      "patientSelect": "Patient auswählen...",
+      "therapist": "Therapeut",
+      "therapistSelect": "Therapeut auswählen...",
+      "therapyType": "Therapieart",
+      "therapyTypeSelect": "Therapieart auswählen...",
+      "room": "Raum",
+      "roomSelect": "Raum auswählen...",
+      "date": "Datum",
+      "from": "Von",
+      "to": "Bis",
+      "startTime": "Beginn",
+      "endTime": "Ende",
+      "status": "Status",
+      "notes": "Notizen",
+      "notesPlaceholder": "Zusätzliche Anmerkungen...",
+      "select": "Wählen...",
+      "none": "Keine"
+    },
+    "status": {
+      "scheduled": "Geplant",
+      "confirmed": "Bestätigt",
+      "in_progress": "In Behandlung",
+      "completed": "Abgeschlossen",
+      "cancelled": "Storniert",
+      "no_show": "Nicht erschienen"
+    },
+    "messages": {
+      "successCreate": "Termin erstellt!",
+      "successUpdate": "Termin aktualisiert!",
+      "successDelete": "Termin gelöscht!",
+      "confirmDelete": "Möchten Sie diesen Termin wirklich löschen?",
+      "errorSave": "Fehler beim Speichern des Termins.",
+      "today": "Heute",
+      "previous": "Zurück",
+      "next": "Weiter",
+      "month": "Monat",
+      "week": "Woche",
+      "day": "Tag",
+      "agenda": "Agenda",
+      "date": "Datum",
+      "time": "Zeit",
+      "event": "Termin",
+      "noEventsInRange": "Keine Termine in diesem Zeitraum",
+      "selectClinic": "Bitte wählen Sie eine Klinik aus, um den Kalender zu sehen."
+    }
+  },
+  "rooms": {
+    "title": "Räume",
+    "subtitle": "Verwalten Sie die verfügbaren Räume Ihrer Klinik.",
+    "add": "Raum hinzufügen",
+    "edit": "Raum bearbeiten",
+    "create": "Neuen Raum erstellen",
+    "form": {
+      "description": "Geben Sie die Details des Raums ein. Klicken Sie auf Speichern, wenn Sie fertig sind.",
+      "namePlaceholder": "z.B. Behandlungsraum 1",
+      "equipmentPlaceholder": "z.B. Liege, Ultraschall",
+      "name": "Raumname",
+      "capacity": "Kapazität",
+      "equipment": "Ausstattung"
+    },
+    "table": {
+      "name": "Raumname",
+      "capacity": "Kapazität",
+      "equipment": "Ausstattung",
+      "actions": "Aktionen"
+    },
+    "messages": {
+      "successCreate": "Raum erstellt!",
+      "successUpdate": "Raum aktualisiert!",
+      "successDelete": "Raum gelöscht!",
+      "confirmDelete": "Wirklich löschen?",
+      "empty": "Keine Räume gefunden.",
+      "selectClinic": "Bitte wählen Sie eine Klinik aus oder erstellen Sie eine, um Räume zu verwalten."
+    }
+  },
+  "therapyTypes": {
+    "title": "Therapiearten",
+    "subtitle": "Verwalten Sie die angebotenen Therapien.",
+    "add": "Therapieart hinzufügen",
+    "edit": "Therapieart bearbeiten",
+    "create": "Neue Therapieart erstellen",
+    "form": {
+      "description": "Details der Therapieart anpassen.",
+      "namePlaceholder": "z.B. Physiotherapie",
+      "descriptionPlaceholder": "Kurze Beschreibung"
+    },
+    "table": {
+      "color": "Farbe",
+      "name": "Name",
+      "duration": "Dauer (Min)",
+      "description": "Beschreibung",
+      "actions": "Aktionen"
+    },
+    "messages": {
+      "successCreate": "Therapieart erstellt!",
+      "successUpdate": "Therapieart aktualisiert!",
+      "successDelete": "Therapieart gelöscht!",
+      "confirmDelete": "Wirklich löschen?",
+      "empty": "Keine Therapiearten gefunden."
+    }
+  },
+  "clinics": {
+    "title": "Klinikverwaltung",
+    "subtitle": "Systemweite Verwaltung aller Kliniken.",
+    "add": "Klinik hinzufügen",
+    "edit": "Klinik bearbeiten",
+    "create": "Neue Klinik anlegen",
+    "form": {
+      "description": "Hinterlegen Sie die grundlegenden Daten der Klinik.",
+      "namePlaceholder": "z.B. Reha-Klinik Sonnenaufgang",
+      "adminEmail": "Initialer Klinik-Admin (E-Mail)",
+      "adminDescription": "Der Nutzer erhält automatisch Admin-Rechte, sobald er sich registriert."
+    },
+    "table": {
+      "name": "Klinik Name",
+      "contact": "Kontakt",
+      "address": "Adresse",
+      "actions": "Aktionen"
+    },
+    "messages": {
+      "successCreate": "Klinik erstellt!",
+      "successUpdate": "Klinik aktualisiert!",
+      "successDelete": "Klinik gelöscht!",
+      "confirmDelete": "Wirklich löschen?",
+      "empty": "Keine Kliniken gefunden.",
+      "accessDenied": "Zugriff verweigert. Nur für System-Administratoren.",
+      "inviteSuccess": "Einladung an {{email}} wurde vorgemerkt.",
+      "inviteError": "Klinik erstellt, aber Einladung konnte nicht gespeichert werden."
+    }
+  },
+  "home": {
+    "selectClinic": "Bitte wählen Sie eine Klinik aus.",
+    "greeting": "Willkommen zurück, {{name}}!",
+    "overview": "Übersicht für {{date}}",
+    "kpis": {
+      "patients": "Patienten gesamt",
+      "appointments": "Termine heute",
+      "therapists": "Aktive Therapeuten",
+      "rooms": "Verfügbare Räume"
+    },
+    "appointments": {
+      "title": "Heutige Termine",
+      "subtitle": "Die nächsten anstehenden Behandlungen.",
+      "viewAll": "Alle ansehen",
+      "loading": "Termine werden geladen...",
+      "empty": "Heute sind keine Termine geplant."
+    },
+    "quickActions": {
+      "title": "Schnellzugriff",
+      "subtitle": "Häufig genutzte Funktionen.",
+      "newAppointment": "Neuer Termin",
+      "addPatient": "Patient anlegen",
+      "manageTeam": "Team verwalten"
+    }
+  }
+}

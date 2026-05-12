@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -37,22 +38,23 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const inviteSchema = z.object({
-  email: z.string().email("Ungültige E-Mail"),
+const inviteSchema = (t: any) => z.object({
+  email: z.string().email(t('auth.login.error')),
   role: z.enum(["clinic_admin", "therapist", "receptionist", "viewer"]),
 });
 
 type InviteFormValues = z.infer<typeof inviteSchema>;
 
 export default function TeamPage() {
+  const { t } = useTranslation();
   const { user, activeClinicId } = useAuth();
   const queryClient = useQueryClient();
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<any>(null);
 
-  const { register, handleSubmit, control, reset, formState: { errors } } = useForm<InviteFormValues>({
-    resolver: zodResolver(inviteSchema),
+  const { register, handleSubmit, control, reset, formState: { errors } } = useForm<any>({
+    resolver: zodResolver(inviteSchema(t)),
     defaultValues: {
       email: "",
       role: "therapist",
@@ -106,7 +108,7 @@ export default function TeamPage() {
   // Invite Mutation
   const inviteMutation = useMutation({
     mutationFn: async (values: InviteFormValues) => {
-      if (!activeClinicId) throw new Error("Keine Klinik ausgewählt");
+      if (!activeClinicId) throw new Error(t('patients.messages.selectClinic'));
       
       const { error } = await supabase
         .from("invitations")
@@ -119,12 +121,12 @@ export default function TeamPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invitations"] });
-      toast.success("Einladung verschickt!");
+      toast.success(t('team.messages.successInvite'));
       setIsInviteOpen(false);
       reset();
     },
     onError: (error: any) => {
-      toast.error(error.message || "Fehler beim Einladen.");
+      toast.error(error.message || "Error.");
     }
   });
 
@@ -148,11 +150,11 @@ export default function TeamPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["team-members"] });
-      toast.success("Rolle erfolgreich aktualisiert.");
+      toast.success(t('team.messages.successUpdate'));
       setIsEditOpen(false);
     },
     onError: (error: any) => {
-      toast.error(error.message || "Fehler beim Aktualisieren der Rolle.");
+      toast.error(error.message || "Error updating role.");
     }
   });
 
@@ -175,10 +177,10 @@ export default function TeamPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["team-members"] });
-      toast.success("Mitglied wurde aus dem Team entfernt.");
+      toast.success(t('team.messages.successRemove'));
     },
     onError: (error: any) => {
-      toast.error(error.message || "Fehler beim Entfernen des Mitglieds.");
+      toast.error(error.message || "Error removing member.");
     }
   });
 
@@ -190,7 +192,7 @@ export default function TeamPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invitations"] });
-      toast.success("Einladung zurückgezogen.");
+      toast.success(t('team.messages.successRevoke'));
     }
   });
 
@@ -212,7 +214,7 @@ export default function TeamPage() {
   if (!activeClinicId) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
-        <p className="text-slate-500">Bitte wählen Sie eine Klinik aus.</p>
+        <p className="text-slate-500">{t('patients.messages.selectClinic')}</p>
       </div>
     );
   }
@@ -221,18 +223,18 @@ export default function TeamPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Team-Verwaltung</h2>
-          <p className="text-sm text-slate-500">Verwalten Sie Ihre Mitarbeiter und deren Rollen.</p>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">{t('team.title')}</h2>
+          <p className="text-sm text-slate-500">{t('team.subtitle')}</p>
         </div>
         <Button onClick={() => setIsInviteOpen(true)} className="bg-blue-600 hover:bg-blue-700">
-          <UserPlus className="mr-2 h-4 w-4" /> Mitglied einladen
+          <UserPlus className="mr-2 h-4 w-4" /> {t('team.add')}
         </Button>
       </div>
 
       <Tabs defaultValue="members" className="w-full">
         <TabsList className="mb-4">
-          <TabsTrigger value="members">Aktive Mitglieder</TabsTrigger>
-          <TabsTrigger value="invites">Ausstehende Einladungen</TabsTrigger>
+          <TabsTrigger value="members">{t('team.tabs.members')}</TabsTrigger>
+          <TabsTrigger value="invites">{t('team.tabs.invites')}</TabsTrigger>
         </TabsList>
         
         <TabsContent value="members">
@@ -240,10 +242,10 @@ export default function TeamPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50">
-                  <TableHead>Name</TableHead>
-                  <TableHead>E-Mail</TableHead>
-                  <TableHead>Rolle</TableHead>
-                  <TableHead className="text-right">Aktionen</TableHead>
+                  <TableHead>{t('team.table.name')}</TableHead>
+                  <TableHead>{t('team.table.email')}</TableHead>
+                  <TableHead>{t('team.table.role')}</TableHead>
+                  <TableHead className="text-right">{t('team.table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -256,7 +258,7 @@ export default function TeamPage() {
                 ) : members?.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={4} className="h-24 text-center text-slate-500">
-                      Keine Teammitglieder gefunden.
+                      {t('team.messages.emptyMembers')}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -267,16 +269,14 @@ export default function TeamPage() {
                           <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">
                             {member.full_name?.charAt(0) || "U"}
                           </div>
-                          {member.full_name || "Unbekannt"}
+                          {member.full_name || t('common.unknown')}
                         </div>
                       </TableCell>
                       <TableCell className="text-slate-600">{member.email}</TableCell>
                       <TableCell>
                         <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800 border border-slate-200 capitalize">
                           <ShieldCheck className="w-3 h-3 text-blue-500" />
-                          {member.user_roles?.[0]?.role === 'receptionist' ? 'Empfang / Terminplaner' : 
-                           member.user_roles?.[0]?.role === 'viewer' ? 'Leser (nur Lesezugriff)' : 
-                           member.user_roles?.[0]?.role?.replace('_', ' ') || "Keine Rolle"}
+                          {t(`roles.${member.user_roles?.[0]?.role || 'none'}`)}
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
@@ -285,23 +285,23 @@ export default function TeamPage() {
                             variant="ghost" 
                             size="sm" 
                             className="text-slate-600 hover:text-blue-600"
-                            onClick={() => openEditDialog(member)}
+                             onClick={() => openEditDialog(member)}
                             disabled={member.id === user?.id} // Cannot edit own role to prevent lockout
                           >
-                            <Pencil className="h-4 w-4 mr-1" /> Bearbeiten
+                            <Pencil className="h-4 w-4 mr-1" /> {t('common.edit')}
                           </Button>
                           <Button 
                             variant="ghost" 
                             size="sm" 
                             className="text-slate-400 hover:text-red-600"
-                            onClick={() => {
-                              if (confirm(`${member.full_name || member.email} wirklich aus dem Team entfernen?`)) {
+                             onClick={() => {
+                              if (confirm(t('team.messages.confirmRemove', { name: member.full_name || member.email }))) {
                                 deleteMemberMutation.mutate(member.id);
                               }
                             }}
                             disabled={member.id === user?.id} // Cannot remove yourself
                           >
-                            <Trash2 className="h-4 w-4 mr-1" /> Entfernen
+                            <Trash2 className="h-4 w-4 mr-1" /> {t('common.delete')}
                           </Button>
                         </div>
                       </TableCell>
@@ -318,10 +318,10 @@ export default function TeamPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-slate-50">
-                  <TableHead>E-Mail</TableHead>
-                  <TableHead>Geplante Rolle</TableHead>
-                  <TableHead>Datum</TableHead>
-                  <TableHead className="text-right">Aktionen</TableHead>
+                  <TableHead>{t('team.table.email')}</TableHead>
+                  <TableHead>{t('team.table.role')}</TableHead>
+                  <TableHead>{t('team.table.date')}</TableHead>
+                  <TableHead className="text-right">{t('team.table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -334,7 +334,7 @@ export default function TeamPage() {
                 ) : invitations?.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={4} className="h-24 text-center text-slate-500 italic py-8">
-                      Keine ausstehenden Einladungen.
+                      {t('team.messages.emptyInvites')}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -346,9 +346,7 @@ export default function TeamPage() {
                       </TableCell>
                       <TableCell>
                         <span className="capitalize text-sm bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100">
-                          {invite.role === 'receptionist' ? 'Empfang / Terminplaner' : 
-                           invite.role === 'viewer' ? 'Leser (nur Lesezugriff)' : 
-                           invite.role.replace('_', ' ')}
+                          {t(`roles.${invite.role}`)}
                         </span>
                       </TableCell>
                       <TableCell className="text-sm text-slate-500">
@@ -358,14 +356,14 @@ export default function TeamPage() {
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="text-red-500 hover:bg-red-50"
+                           className="text-red-500 hover:bg-red-50"
                           onClick={() => {
-                            if (confirm("Einladung wirklich zurückziehen?")) {
+                            if (confirm(t('team.messages.confirmRevoke'))) {
                               deleteInviteMutation.mutate(invite.id);
                             }
                           }}
                         >
-                          Zurückziehen
+                          {t('common.delete')}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -381,25 +379,25 @@ export default function TeamPage() {
       <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <form onSubmit={handleSubmit(onInviteSubmit)}>
-            <DialogHeader>
+             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-blue-600" />
-                Mitarbeiter einladen
+                {t('team.add')}
               </DialogTitle>
               <DialogDescription>
-                Die Person erhält nach der Registrierung automatisch Zugriff auf diese Klinik.
+                {t('team.form.inviteDescription')}
               </DialogDescription>
             </DialogHeader>
             
-            <div className="grid gap-4 py-4">
+             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="email">E-Mail Adresse</Label>
-                <Input id="email" {...register("email")} placeholder="kollege@beispiel.de" />
-                {errors.email && <p className="text-xs text-red-500">{errors.email.message}</p>}
+                <Label htmlFor="email">{t('team.form.email')}</Label>
+                <Input id="email" {...register("email")} placeholder={t('team.form.placeholderEmail')} />
+                {errors.email && <p className="text-xs text-red-500">{errors.email?.message as string}</p>}
               </div>
               
-              <div className="grid gap-2">
-                <Label htmlFor="role">Rolle</Label>
+               <div className="grid gap-2">
+                <Label htmlFor="role">{t('team.form.role')}</Label>
                 <Controller
                   name="role"
                   control={control}
@@ -407,17 +405,14 @@ export default function TeamPage() {
                     <Select onValueChange={field.onChange} value={field.value}>
                       <SelectTrigger className="w-full">
                         <SelectValue>
-                          {field.value === "clinic_admin" ? "Clinic Admin (Vollzugriff)" :
-                           field.value === "therapist" ? "Therapeut (im Kalender sichtbar)" :
-                           field.value === "receptionist" ? "Empfang / Terminplaner" :
-                           field.value === "viewer" ? "Leser (nur Lesezugriff)" : "Rolle wählen..."}
+                          {field.value ? t(`roles.${field.value}`) : t('team.form.roleSelect') || 'Select Role'}
                         </SelectValue>
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="therapist">Therapeut (im Kalender sichtbar)</SelectItem>
-                        <SelectItem value="receptionist">Empfang / Terminplaner</SelectItem>
-                        <SelectItem value="viewer">Leser (nur Lesezugriff)</SelectItem>
-                        <SelectItem value="clinic_admin">Clinic Admin (Vollzugriff)</SelectItem>
+                       <SelectContent>
+                        <SelectItem value="therapist">{t('roles.therapist')}</SelectItem>
+                        <SelectItem value="receptionist">{t('roles.receptionist')}</SelectItem>
+                        <SelectItem value="viewer">{t('roles.viewer')}</SelectItem>
+                        <SelectItem value="clinic_admin">{t('roles.clinic_admin')}</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
@@ -425,13 +420,13 @@ export default function TeamPage() {
               </div>
             </div>
 
-            <DialogFooter>
+             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsInviteOpen(false)}>
-                Abbrechen
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={inviteMutation.isPending} className="bg-blue-600 hover:bg-blue-700">
                 {inviteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Einladung senden
+                {t('team.invite')}
               </Button>
             </DialogFooter>
           </form>
@@ -442,19 +437,19 @@ export default function TeamPage() {
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <form onSubmit={editForm.handleSubmit(onEditSubmit)}>
-            <DialogHeader>
+             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <ShieldCheck className="w-5 h-5 text-blue-600" />
-                Rolle bearbeiten
+                {t('team.form.editRole')}
               </DialogTitle>
               <DialogDescription>
-                Ändern Sie die Berechtigungen für {editingMember?.full_name || editingMember?.email}.
+                {t('team.form.editSubtitle', { name: editingMember?.full_name || editingMember?.email })}
               </DialogDescription>
             </DialogHeader>
             
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="edit-role">Rolle</Label>
+                <Label htmlFor="edit-role">{t('team.form.role')}</Label>
                 <Controller
                   name="role"
                   control={editForm.control}
@@ -462,17 +457,14 @@ export default function TeamPage() {
                     <Select onValueChange={field.onChange} value={field.value}>
                       <SelectTrigger className="w-full">
                         <SelectValue>
-                          {field.value === "clinic_admin" ? "Clinic Admin (Vollzugriff)" :
-                           field.value === "therapist" ? "Therapeut (im Kalender sichtbar)" :
-                           field.value === "receptionist" ? "Empfang / Terminplaner" :
-                           field.value === "viewer" ? "Leser (nur Lesezugriff)" : "Rolle wählen..."}
+                          {field.value ? t(`roles.${field.value}`) : t('team.form.roleSelect') || 'Select Role'}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="therapist">Therapeut (im Kalender sichtbar)</SelectItem>
-                        <SelectItem value="receptionist">Empfang / Terminplaner</SelectItem>
-                        <SelectItem value="viewer">Leser (nur Lesezugriff)</SelectItem>
-                        <SelectItem value="clinic_admin">Clinic Admin (Vollzugriff)</SelectItem>
+                        <SelectItem value="therapist">{t('roles.therapist')}</SelectItem>
+                        <SelectItem value="receptionist">{t('roles.receptionist')}</SelectItem>
+                        <SelectItem value="viewer">{t('roles.viewer')}</SelectItem>
+                        <SelectItem value="clinic_admin">{t('roles.clinic_admin')}</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
@@ -480,13 +472,13 @@ export default function TeamPage() {
               </div>
             </div>
 
-            <DialogFooter>
+             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)}>
-                Abbrechen
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={updateRoleMutation.isPending} className="bg-blue-600 hover:bg-blue-700">
                 {updateRoleMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Änderungen speichern
+                {t('common.save')}
               </Button>
             </DialogFooter>
           </form>

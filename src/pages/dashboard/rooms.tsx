@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,22 +30,23 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const roomSchema = z.object({
-  name: z.string().min(1, "Name ist erforderlich"),
-  capacity: z.coerce.number().min(1, "Kapazität muss mindestens 1 sein"),
+const roomSchema = (t: any) => z.object({
+  name: z.string().min(1, t('common.required')),
+  capacity: z.coerce.number().min(1, t('common.required')),
   equipment: z.string().optional(),
 });
 
 type RoomFormValues = z.infer<typeof roomSchema>;
 
 export default function RoomsPage() {
+  const { t } = useTranslation();
   const { activeClinicId } = useAuth();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<RoomFormValues>({
-    resolver: zodResolver(roomSchema),
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<any>({
+    resolver: zodResolver(roomSchema(t)),
     defaultValues: {
       name: "",
       capacity: 1,
@@ -99,13 +101,13 @@ export default function RoomsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rooms"] });
-      toast.success(editingRoom ? "Raum aktualisiert!" : "Raum erstellt!");
+      toast.success(editingRoom ? t('rooms.messages.successUpdate') : t('rooms.messages.successCreate'));
       setIsDialogOpen(false);
       reset();
       setEditingRoom(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || "Ein Fehler ist aufgetreten.");
+      toast.error(error.message || "An error occurred.");
     }
   });
 
@@ -117,10 +119,10 @@ export default function RoomsPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rooms"] });
-      toast.success("Raum gelöscht!");
+      toast.success(t('rooms.messages.successDelete'));
     },
     onError: (error: any) => {
-      toast.error(error.message || "Fehler beim Löschen.");
+      toast.error(error.message || "Error deleting.");
     }
   });
 
@@ -147,7 +149,7 @@ export default function RoomsPage() {
   if (!activeClinicId) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
-        <p className="text-slate-500">Bitte wählen Sie eine Klinik aus oder erstellen Sie eine, um Räume zu verwalten.</p>
+        <p className="text-slate-500">{t('rooms.messages.selectClinic')}</p>
       </div>
     );
   }
@@ -156,11 +158,11 @@ export default function RoomsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Räume</h2>
-          <p className="text-sm text-slate-500">Verwalten Sie die verfügbaren Räume Ihrer Klinik.</p>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">{t('rooms.title')}</h2>
+          <p className="text-sm text-slate-500">{t('rooms.subtitle')}</p>
         </div>
         <Button onClick={openCreateDialog} className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="mr-2 h-4 w-4" /> Raum hinzufügen
+          <Plus className="mr-2 h-4 w-4" /> {t('rooms.add')}
         </Button>
       </div>
 
@@ -168,10 +170,10 @@ export default function RoomsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Kapazität</TableHead>
-              <TableHead>Ausstattung</TableHead>
-              <TableHead className="text-right">Aktionen</TableHead>
+              <TableHead>{t('rooms.table.name')}</TableHead>
+              <TableHead>{t('rooms.table.capacity')}</TableHead>
+              <TableHead>{t('rooms.table.equipment')}</TableHead>
+              <TableHead className="text-right">{t('rooms.table.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -184,7 +186,7 @@ export default function RoomsPage() {
             ) : rooms?.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center text-slate-500">
-                  Keine Räume gefunden.
+                  {t('rooms.messages.empty')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -202,8 +204,8 @@ export default function RoomsPage() {
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      onClick={() => {
-                        if (confirm("Wirklich löschen?")) {
+                     onClick={() => {
+                        if (confirm(t('rooms.messages.confirmDelete'))) {
                           deleteMutation.mutate(room.id);
                         }
                       }}
@@ -222,35 +224,35 @@ export default function RoomsPage() {
         <DialogContent className="sm:max-w-[425px]">
           <form onSubmit={handleSubmit(onSubmit)}>
             <DialogHeader>
-              <DialogTitle>{editingRoom ? "Raum bearbeiten" : "Neuen Raum erstellen"}</DialogTitle>
+              <DialogTitle>{editingRoom ? t('rooms.edit') : t('rooms.create')}</DialogTitle>
               <DialogDescription>
-                Geben Sie die Details des Raums ein. Klicken Sie auf Speichern, wenn Sie fertig sind.
+                {t('rooms.form.description')}
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
+             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="name">Raumname</Label>
-                <Input id="name" {...register("name")} placeholder="z.B. Behandlungsraum 1" />
-                {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
+                <Label htmlFor="name">{t('rooms.table.name')}</Label>
+                <Input id="name" {...register("name")} placeholder={t('rooms.form.namePlaceholder')} />
+                {errors.name && <p className="text-sm text-red-500">{errors.name.message as string}</p>}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="capacity">Kapazität (Personen)</Label>
+                <Label htmlFor="capacity">{t('rooms.table.capacity')}</Label>
                 <Input id="capacity" type="number" {...register("capacity")} />
-                {errors.capacity && <p className="text-sm text-red-500">{errors.capacity.message}</p>}
+                {errors.capacity && <p className="text-sm text-red-500">{errors.capacity.message as string}</p>}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="equipment">Ausstattung (kommagetrennt)</Label>
-                <Input id="equipment" {...register("equipment")} placeholder="z.B. Liege, Ultraschall" />
-                {errors.equipment && <p className="text-sm text-red-500">{errors.equipment.message}</p>}
+                <Label htmlFor="equipment">{t('rooms.table.equipment')}</Label>
+                <Input id="equipment" {...register("equipment")} placeholder={t('rooms.form.equipmentPlaceholder')} />
+                {errors.equipment && <p className="text-sm text-red-500">{errors.equipment.message as string}</p>}
               </div>
             </div>
-            <DialogFooter>
+             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Abbrechen
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Speichern
+                {t('common.save')}
               </Button>
             </DialogFooter>
           </form>

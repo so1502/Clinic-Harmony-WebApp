@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,23 +30,24 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const therapyTypeSchema = z.object({
-  name: z.string().min(1, "Name ist erforderlich"),
+const therapyTypeSchema = (t: any) => z.object({
+  name: z.string().min(1, t('common.required')),
   description: z.string().optional(),
-  duration_minutes: z.coerce.number().min(5, "Dauer muss mindestens 5 Minuten betragen"),
-  color: z.string().regex(/^#[0-9A-F]{6}$/i, "Gültige Hex-Farbe erforderlich (z.B. #FF0000)").optional(),
+  duration_minutes: z.coerce.number().min(5, t('common.required')),
+  color: z.string().regex(/^#[0-9A-F]{6}$/i, t('common.required')).optional(),
 });
 
 type TherapyTypeFormValues = z.infer<typeof therapyTypeSchema>;
 
 export default function TherapyTypesPage() {
+  const { t } = useTranslation();
   const { activeClinicId } = useAuth();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingType, setEditingType] = useState<TherapyType | null>(null);
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<TherapyTypeFormValues>({
-    resolver: zodResolver(therapyTypeSchema),
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<any>({
+    resolver: zodResolver(therapyTypeSchema(t)),
     defaultValues: {
       name: "",
       description: "",
@@ -98,13 +100,13 @@ export default function TherapyTypesPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["therapyTypes"] });
-      toast.success(editingType ? "Therapieart aktualisiert!" : "Therapieart erstellt!");
+      toast.success(editingType ? t('therapyTypes.messages.successUpdate') : t('therapyTypes.messages.successCreate'));
       setIsDialogOpen(false);
       reset();
       setEditingType(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || "Ein Fehler ist aufgetreten.");
+      toast.error(error.message || "An error occurred.");
     }
   });
 
@@ -116,10 +118,10 @@ export default function TherapyTypesPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["therapyTypes"] });
-      toast.success("Therapieart gelöscht!");
+      toast.success(t('therapyTypes.messages.successDelete'));
     },
     onError: (error: any) => {
-      toast.error(error.message || "Fehler beim Löschen.");
+      toast.error(error.message || "Error deleting.");
     }
   });
 
@@ -147,7 +149,7 @@ export default function TherapyTypesPage() {
   if (!activeClinicId) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
-        <p className="text-slate-500">Bitte wählen Sie eine Klinik aus.</p>
+        <p className="text-slate-500">{t('patients.messages.selectClinic')}</p>
       </div>
     );
   }
@@ -156,11 +158,11 @@ export default function TherapyTypesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Therapiearten</h2>
-          <p className="text-sm text-slate-500">Verwalten Sie die angebotenen Therapien.</p>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">{t('therapyTypes.title')}</h2>
+          <p className="text-sm text-slate-500">{t('therapyTypes.subtitle')}</p>
         </div>
         <Button onClick={openCreateDialog} className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="mr-2 h-4 w-4" /> Therapieart hinzufügen
+          <Plus className="mr-2 h-4 w-4" /> {t('therapyTypes.add')}
         </Button>
       </div>
 
@@ -168,11 +170,11 @@ export default function TherapyTypesPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Farbe</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Dauer (Min)</TableHead>
-              <TableHead>Beschreibung</TableHead>
-              <TableHead className="text-right">Aktionen</TableHead>
+              <TableHead>{t('therapyTypes.table.color')}</TableHead>
+              <TableHead>{t('therapyTypes.table.name')}</TableHead>
+              <TableHead>{t('therapyTypes.table.duration')}</TableHead>
+              <TableHead>{t('therapyTypes.table.description')}</TableHead>
+              <TableHead className="text-right">{t('therapyTypes.table.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -185,7 +187,7 @@ export default function TherapyTypesPage() {
             ) : therapyTypes?.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-24 text-center text-slate-500">
-                  Keine Therapiearten gefunden.
+                  {t('therapyTypes.messages.empty')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -206,8 +208,8 @@ export default function TherapyTypesPage() {
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      onClick={() => {
-                        if (confirm("Wirklich löschen?")) {
+                     onClick={() => {
+                        if (confirm(t('therapyTypes.messages.confirmDelete'))) {
                           deleteMutation.mutate(type.id);
                         }
                       }}
@@ -226,43 +228,43 @@ export default function TherapyTypesPage() {
         <DialogContent className="sm:max-w-[425px]">
           <form onSubmit={handleSubmit(onSubmit)}>
             <DialogHeader>
-              <DialogTitle>{editingType ? "Therapieart bearbeiten" : "Neue Therapieart erstellen"}</DialogTitle>
+              <DialogTitle>{editingType ? t('therapyTypes.edit') : t('therapyTypes.create')}</DialogTitle>
               <DialogDescription>
-                Details der Therapieart anpassen.
+                {t('therapyTypes.form.description')}
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
+             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" {...register("name")} placeholder="z.B. Physiotherapie" />
-                {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
+                <Label htmlFor="name">{t('therapyTypes.table.name')}</Label>
+                <Input id="name" {...register("name")} placeholder={t('therapyTypes.form.namePlaceholder')} />
+                {errors.name && <p className="text-sm text-red-500">{errors.name.message as string}</p>}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="duration_minutes">Dauer (Minuten)</Label>
+                <Label htmlFor="duration_minutes">{t('therapyTypes.table.duration')}</Label>
                 <Input id="duration_minutes" type="number" {...register("duration_minutes")} />
-                {errors.duration_minutes && <p className="text-sm text-red-500">{errors.duration_minutes.message}</p>}
+                {errors.duration_minutes && <p className="text-sm text-red-500">{errors.duration_minutes.message as string}</p>}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="color">Farbe (Hex)</Label>
+                <Label htmlFor="color">{t('therapyTypes.table.color')} (Hex)</Label>
                 <div className="flex gap-2">
                   <Input id="color" type="color" className="w-16 p-1 h-10" {...register("color")} />
                   <Input type="text" {...register("color")} placeholder="#10b981" className="flex-1" />
                 </div>
-                {errors.color && <p className="text-sm text-red-500">{errors.color.message}</p>}
+                {errors.color && <p className="text-sm text-red-500">{errors.color.message as string}</p>}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="description">Beschreibung (optional)</Label>
-                <Input id="description" {...register("description")} placeholder="Kurze Beschreibung" />
-                {errors.description && <p className="text-sm text-red-500">{errors.description.message}</p>}
+                <Label htmlFor="description">{t('therapyTypes.table.description')}</Label>
+                <Input id="description" {...register("description")} placeholder={t('therapyTypes.form.descriptionPlaceholder')} />
+                {errors.description && <p className="text-sm text-red-500">{errors.description.message as string}</p>}
               </div>
             </div>
-            <DialogFooter>
+             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Abbrechen
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Speichern
+                {t('common.save')}
               </Button>
             </DialogFooter>
           </form>

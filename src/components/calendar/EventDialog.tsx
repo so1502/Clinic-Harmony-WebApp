@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -29,14 +30,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const appointmentSchema = z.object({
-  patient_id: z.string().min(1, "Patient ist erforderlich"),
-  therapist_id: z.string().min(1, "Therapeut ist erforderlich"),
+const appointmentSchema = (t: any) => z.object({
+  patient_id: z.string().min(1, t('common.required')),
+  therapist_id: z.string().min(1, t('common.required')),
   therapy_type_id: z.string().optional(),
   room_id: z.string().optional(),
-  start_date: z.string().min(1, "Startdatum erforderlich"),
-  start_time: z.string().min(1, "Startzeit erforderlich"),
-  end_time: z.string().min(1, "Endzeit erforderlich"),
+  start_date: z.string().min(1, t('common.required')),
+  start_time: z.string().min(1, t('common.required')),
+  end_time: z.string().min(1, t('common.required')),
   status: z.enum(['scheduled', 'confirmed', 'in_progress', 'completed', 'cancelled', 'no_show']).default('scheduled'),
   notes: z.string().optional(),
 });
@@ -58,10 +59,11 @@ export function EventDialog({
   selectedAppointment,
   selectedSlot,
 }: EventDialogProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
-  const { register, handleSubmit, control, reset, formState: { errors, isSubmitting } } = useForm<AppointmentFormValues>({
-    resolver: zodResolver(appointmentSchema),
+  const { register, handleSubmit, control, reset, formState: { errors, isSubmitting } } = useForm<any>({
+    resolver: zodResolver(appointmentSchema(t)),
     defaultValues: {
       patient_id: "",
       therapist_id: "",
@@ -162,7 +164,7 @@ export function EventDialog({
 
   const saveMutation = useMutation({
     mutationFn: async (values: AppointmentFormValues) => {
-      if (!activeClinicId) throw new Error("Keine Klinik ausgewählt");
+      if (!activeClinicId) throw new Error(t('patients.messages.selectClinic'));
 
       const startDateTime = new Date(`${values.start_date}T${values.start_time}`);
       const endDateTime = new Date(`${values.start_date}T${values.end_time}`);
@@ -203,11 +205,11 @@ export function EventDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
-      toast.success(selectedAppointment ? "Termin aktualisiert!" : "Termin erstellt!");
+      toast.success(selectedAppointment ? t('calendar.messages.successUpdate') : t('calendar.messages.successCreate'));
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Fehler beim Speichern des Termins.");
+      toast.error(error.message || t('calendar.messages.errorSave'));
     }
   });
 
@@ -219,11 +221,11 @@ export function EventDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["appointments"] });
-      toast.success("Termin gelöscht!");
+      toast.success(t('calendar.messages.successDelete'));
       onOpenChange(false);
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Fehler beim Löschen.");
+      toast.error(error.message || "Error.");
     }
   });
 
@@ -237,7 +239,7 @@ export function EventDialog({
         <form onSubmit={handleSubmit(onSubmit)}>
           <DialogHeader>
             <DialogTitle className="text-xl text-blue-800">
-              {selectedAppointment ? "Termindetails" : "Neuer Termin"}
+              {selectedAppointment ? t('calendar.eventDetails') : t('calendar.newEvent')}
             </DialogTitle>
           </DialogHeader>
 
@@ -245,7 +247,7 @@ export function EventDialog({
             {/* Personell Row */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Patient</Label>
+                <Label>{t('calendar.form.patient')}</Label>
                 <Controller
                   name="patient_id"
                   control={control}
@@ -253,7 +255,7 @@ export function EventDialog({
                     <Select onValueChange={field.onChange} value={field.value}>
                       <SelectTrigger>
                         <SelectValue>
-                          {patients?.find(p => p.id === field.value)?.full_name || "Patient wählen..."}
+                          {patients?.find(p => p.id === field.value)?.full_name || t('calendar.form.patientSelect')}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
@@ -268,7 +270,7 @@ export function EventDialog({
               </div>
 
               <div className="space-y-2">
-                <Label>Therapeut</Label>
+                <Label>{t('calendar.form.therapist')}</Label>
                 <Controller
                   name="therapist_id"
                   control={control}
@@ -276,7 +278,7 @@ export function EventDialog({
                     <Select onValueChange={field.onChange} value={field.value}>
                       <SelectTrigger>
                         <SelectValue>
-                          {therapists?.find((t: any) => t.id === field.value)?.profiles?.full_name || "Therapeut wählen..."}
+                          {therapists?.find((t: any) => t.id === field.value)?.profiles?.full_name || t('calendar.form.therapistSelect')}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
@@ -294,15 +296,15 @@ export function EventDialog({
             {/* Time Row */}
             <div className="grid grid-cols-3 gap-4 border-y border-slate-100 py-4">
               <div className="space-y-2">
-                <Label className="flex items-center gap-1"><CalendarIcon className="w-3 h-3"/> Datum</Label>
+                <Label className="flex items-center gap-1"><CalendarIcon className="w-3 h-3"/> {t('calendar.form.date')}</Label>
                 <Input type="date" {...register("start_date")} />
               </div>
               <div className="space-y-2">
-                <Label className="flex items-center gap-1"><Clock className="w-3 h-3"/> Von</Label>
+                <Label className="flex items-center gap-1"><Clock className="w-3 h-3"/> {t('calendar.form.from')}</Label>
                 <Input type="time" {...register("start_time")} />
               </div>
               <div className="space-y-2">
-                <Label className="flex items-center gap-1"><Clock className="w-3 h-3"/> Bis</Label>
+                <Label className="flex items-center gap-1"><Clock className="w-3 h-3"/> {t('calendar.form.to')}</Label>
                 <Input type="time" {...register("end_time")} />
               </div>
             </div>
@@ -310,7 +312,7 @@ export function EventDialog({
             {/* Details Row */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Therapieart (Optional)</Label>
+                <Label>{t('calendar.form.therapyType')}</Label>
                 <Controller
                   name="therapy_type_id"
                   control={control}
@@ -318,11 +320,11 @@ export function EventDialog({
                     <Select onValueChange={field.onChange} value={field.value || ""}>
                       <SelectTrigger>
                         <SelectValue>
-                          {therapyTypes?.find(t => t.id === field.value)?.name || "Therapieart wählen..."}
+                          {therapyTypes?.find(t => t.id === field.value)?.name || t('calendar.form.therapyTypeSelect')}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none" className="text-slate-400">Keine</SelectItem>
+                        <SelectItem value="none" className="text-slate-400">{t('calendar.form.none')}</SelectItem>
                         {therapyTypes?.map((t) => (
                           <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                         ))}
@@ -332,8 +334,8 @@ export function EventDialog({
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>Raum (Optional)</Label>
+               <div className="space-y-2">
+                <Label>{t('calendar.form.room')}</Label>
                 <Controller
                   name="room_id"
                   control={control}
@@ -341,11 +343,11 @@ export function EventDialog({
                     <Select onValueChange={field.onChange} value={field.value || ""}>
                       <SelectTrigger>
                         <SelectValue>
-                          {rooms?.find(r => r.id === field.value)?.name || "Raum wählen..."}
+                          {rooms?.find(r => r.id === field.value)?.name || t('calendar.form.roomSelect')}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none" className="text-slate-400">Keiner</SelectItem>
+                        <SelectItem value="none" className="text-slate-400">{t('calendar.form.none')}</SelectItem>
                         {rooms?.map((r) => (
                           <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
                         ))}
@@ -356,8 +358,8 @@ export function EventDialog({
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Status</Label>
+             <div className="space-y-2">
+              <Label>{t('calendar.form.status')}</Label>
               <Controller
                 name="status"
                 control={control}
@@ -366,22 +368,22 @@ export function EventDialog({
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="scheduled">Geplant</SelectItem>
-                      <SelectItem value="confirmed">Bestätigt</SelectItem>
-                      <SelectItem value="in_progress">In Behandlung</SelectItem>
-                      <SelectItem value="completed">Abgeschlossen</SelectItem>
-                      <SelectItem value="cancelled">Storniert</SelectItem>
-                      <SelectItem value="no_show">Nicht erschienen</SelectItem>
+                     <SelectContent>
+                      <SelectItem value="scheduled">{t('calendar.status.scheduled')}</SelectItem>
+                      <SelectItem value="confirmed">{t('calendar.status.confirmed')}</SelectItem>
+                      <SelectItem value="in_progress">{t('calendar.status.in_progress')}</SelectItem>
+                      <SelectItem value="completed">{t('calendar.status.completed')}</SelectItem>
+                      <SelectItem value="cancelled">{t('calendar.status.cancelled')}</SelectItem>
+                      <SelectItem value="no_show">{t('calendar.status.no_show')}</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>Notizen</Label>
-              <Textarea {...register("notes")} placeholder="Optionale Notizen zum Termin..." className="resize-none h-20" />
+             <div className="space-y-2">
+              <Label>{t('calendar.form.notes')}</Label>
+              <Textarea {...register("notes")} placeholder={t('calendar.form.notesPlaceholder')} className="resize-none h-20" />
             </div>
 
           </div>
@@ -391,27 +393,27 @@ export function EventDialog({
               <Button 
                 type="button" 
                 variant="destructive" 
-                onClick={() => {
-                  if (confirm("Möchten Sie diesen Termin wirklich löschen?")) {
+                 onClick={() => {
+                  if (confirm(t('calendar.messages.confirmDelete'))) {
                     deleteMutation.mutate();
                   }
                 }}
                 disabled={deleteMutation.isPending}
               >
-                {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
-                Löschen
+                 {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                {t('common.delete')}
               </Button>
             ) : (
               <div /> // Placeholder for spacing
             )}
             
-            <div className="flex gap-2">
+             <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Abbrechen
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700">
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Speichern
+                {t('common.save')}
               </Button>
             </div>
           </DialogFooter>

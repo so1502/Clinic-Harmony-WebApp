@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
+import { useTranslation } from "react-i18next";
 import { 
   Calendar, 
   Users, 
@@ -12,7 +13,8 @@ import {
   LogOut, 
   Menu, 
   LayoutDashboard,
-  Building2
+  Building2,
+  Globe
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,8 +27,14 @@ import {
 
 export function DashboardLayout() {
   const { signOut, profile, role, activeClinicId, setActiveClinicId } = useAuth();
+  const { t, i18n } = useTranslation();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const toggleLanguage = () => {
+    const newLang = i18n.language === 'de' ? 'en' : 'de';
+    i18n.changeLanguage(newLang);
+  };
 
   // Fetch all clinics if user is system_admin
   const { data: clinics } = useQuery({
@@ -41,16 +49,16 @@ export function DashboardLayout() {
 
 
   const navItems = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Kalender", href: "/dashboard/calendar", icon: Calendar },
-    { name: "Patienten", href: "/dashboard/patients", icon: Users },
-    { name: "Team", href: "/dashboard/therapists", icon: UserSquare2 },
-    { name: "Therapiearten", href: "/dashboard/therapy-types", icon: Activity },
-    { name: "Räume", href: "/dashboard/rooms", icon: DoorOpen },
+    { name: t('dashboard.nav.home'), href: "/dashboard", icon: LayoutDashboard },
+    { name: t('dashboard.nav.calendar'), href: "/dashboard/calendar", icon: Calendar },
+    { name: t('dashboard.nav.patients'), href: "/dashboard/patients", icon: Users },
+    { name: t('dashboard.nav.team'), href: "/dashboard/therapists", icon: UserSquare2 },
+    { name: t('dashboard.nav.therapyTypes'), href: "/dashboard/therapy-types", icon: Activity },
+    { name: t('dashboard.nav.rooms'), href: "/dashboard/rooms", icon: DoorOpen },
   ];
 
   if (role === "system_admin") {
-    navItems.push({ name: "Klinikverwaltung", href: "/dashboard/clinics", icon: Building2 });
+    navItems.push({ name: t('dashboard.nav.clinicManagement'), href: "/dashboard/clinics", icon: Building2 });
   }
 
   return (
@@ -63,7 +71,7 @@ export function DashboardLayout() {
             <Select value={activeClinicId || ""} onValueChange={setActiveClinicId}>
               <SelectTrigger className="w-full h-auto py-2 text-xs font-medium">
                 <SelectValue>
-                  {clinics?.find((c: any) => c.id === activeClinicId)?.name || "Klinik auswählen"}
+                  {clinics?.find((c: any) => c.id === activeClinicId)?.name || t('dashboard.user.selectClinic')}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -105,13 +113,22 @@ export function DashboardLayout() {
               {profile?.full_name?.charAt(0) || "U"}
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-900">{profile?.full_name || "Benutzer"}</p>
-              <p className="text-xs text-slate-500 capitalize">{role ? role.replace('_', ' ') : 'Gast'}</p>
+              <p className="text-sm font-medium text-slate-900">{profile?.full_name || t('dashboard.user.user')}</p>
+              <p className="text-xs text-slate-500 capitalize">{role ? role.replace('_', ' ') : t('dashboard.user.guest')}</p>
             </div>
           </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="w-full justify-start mb-2" 
+            onClick={toggleLanguage}
+          >
+            <Globe className="mr-2 h-4 w-4 text-slate-400" />
+            {i18n.language.toUpperCase()}
+          </Button>
           <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50" onClick={signOut}>
             <LogOut className="mr-2 h-4 w-4" />
-            Abmelden
+            {t('dashboard.user.logout')}
           </Button>
         </div>
       </aside>
@@ -159,9 +176,18 @@ export function DashboardLayout() {
                 </nav>
               </div>
               <div className="border-t border-slate-200 p-4">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-full justify-start mb-2" 
+                  onClick={toggleLanguage}
+                >
+                  <Globe className="mr-2 h-4 w-4 text-slate-400" />
+                  {i18n.language.toUpperCase()}
+                </Button>
                 <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => { signOut(); setIsMobileMenuOpen(false); }}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  Abmelden
+                  {t('dashboard.user.logout')}
                 </Button>
               </div>
             </div>

@@ -1,6 +1,7 @@
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
 import { 
   Users, 
   Calendar as CalendarIcon, 
@@ -24,6 +25,9 @@ import type { Appointment } from "@/types";
 
 export default function HomePage() {
   const { activeClinicId, profile } = useAuth();
+  const { t, i18n } = useTranslation();
+
+  const dateLocale = i18n.language === 'de' ? de : enUS;
 
   // Fetch counts for KPI cards
   const { data: counts } = useQuery({
@@ -82,14 +86,14 @@ export default function HomePage() {
   if (!activeClinicId) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
-        <p className="text-slate-500 text-lg">Bitte wählen Sie eine Klinik aus, um das Dashboard zu sehen.</p>
+        <p className="text-slate-500 text-lg">{t('home.selectClinic')}</p>
       </div>
     );
   }
 
   const kpis = [
     { 
-      title: "Patienten", 
+      title: t('home.kpis.patients'), 
       value: counts?.patients || 0, 
       icon: Users, 
       color: "text-blue-600", 
@@ -97,7 +101,7 @@ export default function HomePage() {
       link: "/dashboard/patients"
     },
     { 
-      title: "Termine Heute", 
+      title: t('home.kpis.appointments'), 
       value: counts?.todayAppointments || 0, 
       icon: CalendarIcon, 
       color: "text-emerald-600", 
@@ -105,7 +109,7 @@ export default function HomePage() {
       link: "/dashboard/calendar"
     },
     { 
-      title: "Therapeuten", 
+      title: t('home.kpis.therapists'), 
       value: counts?.therapists || 0, 
       icon: UserSquare2, 
       color: "text-purple-600", 
@@ -113,7 +117,7 @@ export default function HomePage() {
       link: "/dashboard/therapists"
     },
     { 
-      title: "Räume", 
+      title: t('home.kpis.rooms'), 
       value: counts?.rooms || 0, 
       icon: DoorOpen, 
       color: "text-orange-600", 
@@ -126,10 +130,10 @@ export default function HomePage() {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-          Guten Tag, {profile?.full_name || "Benutzer"}!
+          {t('home.greeting', { name: profile?.full_name || t('dashboard.user.user') })}
         </h1>
         <p className="text-slate-500">
-          Hier ist die Übersicht für heute, {format(new Date(), "EEEE, d. MMMM yyyy", { locale: de })}.
+          {t('home.overview', { date: format(new Date(), "EEEE, d. MMMM yyyy", { locale: dateLocale }) })}
         </p>
       </div>
 
@@ -157,22 +161,22 @@ export default function HomePage() {
         <Card className="lg:col-span-4 border-slate-200 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle>Termine für Heute</CardTitle>
-              <CardDescription>Die nächsten anstehenden Behandlungen.</CardDescription>
+              <CardTitle>{t('home.appointments.title')}</CardTitle>
+              <CardDescription>{t('home.appointments.subtitle')}</CardDescription>
             </div>
             <Link to="/dashboard/calendar">
               <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                Alle sehen <ArrowRight className="ml-2 h-4 w-4" />
+                {t('home.appointments.viewAll')} <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {appointmentsLoading ? (
-                <div className="py-8 text-center text-slate-400">Lädt...</div>
+                <div className="py-8 text-center text-slate-400">{t('home.appointments.loading')}</div>
               ) : todayAppointments?.length === 0 ? (
                 <div className="py-8 text-center text-slate-400 border-2 border-dashed border-slate-100 rounded-lg">
-                  Keine Termine für heute geplant.
+                  {t('home.appointments.empty')}
                 </div>
               ) : (
                 todayAppointments?.map((apt) => (
@@ -199,23 +203,23 @@ export default function HomePage() {
         {/* Quick Actions */}
         <Card className="lg:col-span-3 border-slate-200 shadow-sm bg-gradient-to-br from-white to-slate-50">
           <CardHeader>
-            <CardTitle>Schnellzugriff</CardTitle>
-            <CardDescription>Häufig genutzte Funktionen.</CardDescription>
+            <CardTitle>{t('home.quickActions.title')}</CardTitle>
+            <CardDescription>{t('home.quickActions.subtitle')}</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
             <Link to="/dashboard/calendar" state={{ openCreate: true }}>
               <Button className="w-full justify-start h-12 bg-blue-600 hover:bg-blue-700 shadow-sm" size="lg">
-                <Plus className="mr-3 h-5 w-5" /> Neuer Termin
+                <Plus className="mr-3 h-5 w-5" /> {t('home.quickActions.newAppointment')}
               </Button>
             </Link>
             <Link to="/dashboard/patients" state={{ openCreate: true }}>
               <Button variant="outline" className="w-full justify-start h-12 border-slate-200 hover:bg-white hover:shadow-sm" size="lg">
-                <Users className="mr-3 h-5 w-5 text-blue-600" /> Patient aufnehmen
+                <Users className="mr-3 h-5 w-5 text-blue-600" /> {t('home.quickActions.addPatient')}
               </Button>
             </Link>
             <Link to="/dashboard/team">
               <Button variant="outline" className="w-full justify-start h-12 border-slate-200 hover:bg-white hover:shadow-sm" size="lg">
-                <UserSquare2 className="mr-3 h-5 w-5 text-purple-600" /> Team verwalten
+                <UserSquare2 className="mr-3 h-5 w-5 text-purple-600" /> {t('home.quickActions.manageTeam')}
               </Button>
             </Link>
           </CardContent>

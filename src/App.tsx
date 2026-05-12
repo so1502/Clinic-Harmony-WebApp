@@ -17,6 +17,17 @@ import CalendarPage from "./pages/dashboard/calendar";
 
 // Placeholder components for Step 4
 import HomePage from "./pages/dashboard/home";
+import LandingPage from "./pages/landing/LandingPage";
+import { useAuth } from "./hooks/use-auth";
+
+function RootRoute() {
+  const { user, isLoading } = useAuth();
+  
+  if (isLoading) return null;
+  if (user) return <Navigate to="/dashboard" replace />;
+  
+  return <LandingPage />;
+}
 
 
 const queryClient = new QueryClient();
@@ -44,8 +55,8 @@ function App() {
               </Route>
             </Route>
 
-            {/* Redirect root to dashboard */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            {/* Public Root Route */}
+            <Route path="/" element={<RootRoute />} />
             
             {/* Catch-all route */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -10,18 +10,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
-const registerSchema = z.object({
-  email: z.string().email("Bitte geben Sie eine gültige E-Mail-Adresse ein."),
-  password: z.string().min(6, "Das Passwort muss mindestens 6 Zeichen lang sein."),
-  fullName: z.string().min(2, "Bitte geben Sie Ihren vollständigen Namen ein."),
-});
-
-type RegisterFormValues = z.infer<typeof registerSchema>;
+type RegisterFormValues = {
+  email: string;
+  password: string;
+  fullName: string;
+};
 
 export default function RegisterPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+
+  const registerSchema = z.object({
+    email: z.string().email(t('auth.validation.email')),
+    password: z.string().min(6, t('auth.validation.password')),
+    fullName: z.string().min(2, t('auth.validation.fullName')),
+  });
 
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -55,10 +61,10 @@ export default function RegisterPage() {
           .eq('id', authData.user.id);
       }
 
-      toast.success("Registrierung erfolgreich! Sie können sich nun anmelden.");
+      toast.success(t('auth.register.success'));
       navigate("/auth/login");
     } catch (error: any) {
-      toast.error(error.message || "Fehler bei der Registrierung.");
+      toast.error(error.message || t('auth.register.error'));
     } finally {
       setIsLoading(false);
     }
@@ -68,15 +74,15 @@ export default function RegisterPage() {
     <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
       <Card className="w-full max-w-md shadow-lg border-slate-200">
         <CardHeader className="space-y-2 text-center">
-          <CardTitle className="text-3xl font-bold tracking-tight text-slate-900">Registrierung</CardTitle>
+          <CardTitle className="text-3xl font-bold tracking-tight text-slate-900">{t('auth.register.title')}</CardTitle>
           <CardDescription>
-            Erstellen Sie ein neues Konto für Clinic-Harmony
+            {t('auth.register.subtitle')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="fullName">Vollständiger Name</Label>
+              <Label htmlFor="fullName">{t('auth.register.fullName')}</Label>
               <Input
                 id="fullName"
                 placeholder="Max Mustermann"
@@ -87,7 +93,7 @@ export default function RegisterPage() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">E-Mail</Label>
+              <Label htmlFor="email">{t('auth.register.email')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -99,7 +105,7 @@ export default function RegisterPage() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Passwort</Label>
+              <Label htmlFor="password">{t('auth.register.password')}</Label>
               <Input
                 id="password"
                 type="password"
@@ -111,15 +117,15 @@ export default function RegisterPage() {
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Registrieren
+              {t('auth.register.submit')}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="flex justify-center">
           <p className="text-sm text-slate-600">
-            Bereits ein Konto?{" "}
+            {t('auth.register.hasAccount')}{" "}
             <Link to="/auth/login" className="text-blue-600 hover:underline font-medium">
-              Anmelden
+              {t('auth.register.login')}
             </Link>
           </p>
         </CardFooter>

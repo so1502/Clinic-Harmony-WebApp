@@ -1,4 +1,16 @@
 export type UserRole = 'system_admin' | 'clinic_admin' | 'therapist' | 'receptionist' | 'scheduler' | 'viewer';
+export type TherapistStatus = 'pending' | 'active';
+
+export interface Clinic {
+  id: string;
+  name: string;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  country_code: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export interface Profile {
   id: string;
@@ -36,8 +48,6 @@ export interface TherapyType {
   color: string;
 }
 
-export type TherapistStatus = 'pending' | 'active';
-
 export interface Therapist {
   id: string;
   user_id: string | null;
@@ -53,10 +63,26 @@ export interface Patient {
   id: string;
   clinic_id: string;
   full_name: string;
+  first_name: string | null;
+  last_name: string | null;
   email: string | null;
   phone: string | null;
   date_of_birth: string | null;
-  address: string | null;
+  gender: string | null;
+  ssn_svn: string | null;
+  street: string | null;
+  house_number: string | null;
+  city: string | null;
+  state_province: string | null;
+  postal_code: string | null;
+  country: string | null;
+  address: string | null; // Keeping for legacy
+  insurance_provider: string | null;
+  insurance_number: string | null;
+  insurance_group: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
+  preferred_language: string | null;
   notes: string | null;
   created_at: string;
 }

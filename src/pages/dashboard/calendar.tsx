@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, Plus } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -10,6 +11,7 @@ import { EventDialog } from "@/components/calendar/EventDialog";
 import type {  Appointment  } from "@/types";
 
 export default function CalendarPage() {
+  const { t } = useTranslation();
   const { activeClinicId } = useAuth();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -59,7 +61,7 @@ export default function CalendarPage() {
   if (!activeClinicId) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
-        <p className="text-slate-500">Bitte wählen Sie eine Klinik aus, um den Kalender zu sehen.</p>
+        <p className="text-slate-500">{t('calendar.messages.selectClinic') || t('patients.messages.selectClinic')}</p>
       </div>
     );
   }
@@ -68,13 +70,13 @@ export default function CalendarPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Kalender</h2>
-          <p className="text-sm text-slate-500">Termine planen, verschieben und verwalten.</p>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">{t('calendar.title')}</h2>
+          <p className="text-sm text-slate-500">{t('calendar.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           {/* Filters will go here later */}
           <Button onClick={handleOpenCreate} className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="mr-2 h-4 w-4" /> Neuer Termin
+            <Plus className="mr-2 h-4 w-4" /> {t('calendar.newEvent')}
           </Button>
         </div>
       </div>

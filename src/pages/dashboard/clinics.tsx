@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,24 +29,25 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const clinicSchema = z.object({
-  name: z.string().min(2, "Name ist erforderlich"),
+const clinicSchema = (t: any) => z.object({
+  name: z.string().min(2, t('common.required')),
   address: z.string().optional(),
   phone: z.string().optional(),
-  email: z.string().email("Ungültige E-Mail").or(z.literal("")).optional(),
-  adminEmail: z.string().email("Ungültige E-Mail").or(z.literal("")).optional(),
+  email: z.string().email(t('auth.login.error')).or(z.literal("")).optional(),
+  adminEmail: z.string().email(t('auth.login.error')).or(z.literal("")).optional(),
 });
 
 type ClinicFormValues = z.infer<typeof clinicSchema>;
 
 export default function ClinicsPage() {
+  const { t } = useTranslation();
   const { role } = useAuth();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClinic, setEditingClinic] = useState<any>(null);
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<ClinicFormValues>({
-    resolver: zodResolver(clinicSchema),
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<any>({
+    resolver: zodResolver(clinicSchema(t)),
     defaultValues: {
       name: "",
       address: "",
@@ -102,22 +104,22 @@ export default function ClinicsPage() {
             });
           
           if (inviteError) {
-             toast.error(`Klinik erstellt, aber Einladung konnte nicht gespeichert werden.`);
+             toast.error(t('clinics.messages.inviteError'));
           } else {
-             toast.info(`Einladung an ${values.adminEmail} wurde vorgemerkt.`);
+             toast.info(t('clinics.messages.inviteSuccess', { email: values.adminEmail }));
           }
         }
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["all-clinics"] });
-      toast.success(editingClinic ? "Klinik aktualisiert!" : "Klinik erstellt!");
+      toast.success(editingClinic ? t('clinics.messages.successUpdate') : t('clinics.messages.successCreate'));
       setIsDialogOpen(false);
       reset();
       setEditingClinic(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || "Ein Fehler ist aufgetreten.");
+      toast.error(error.message || "Error.");
     }
   });
 
@@ -146,7 +148,7 @@ export default function ClinicsPage() {
   if (role !== "system_admin") {
     return (
       <div className="flex h-[50vh] items-center justify-center">
-        <p className="text-red-500 font-medium">Zugriff verweigert. Nur für System-Administratoren.</p>
+        <p className="text-red-500 font-medium">{t('clinics.messages.accessDenied')}</p>
       </div>
     );
   }
@@ -155,11 +157,11 @@ export default function ClinicsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Klinikverwaltung</h2>
-          <p className="text-sm text-slate-500">Systemweite Verwaltung aller Kliniken.</p>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900">{t('clinics.title')}</h2>
+          <p className="text-sm text-slate-500">{t('clinics.subtitle')}</p>
         </div>
         <Button onClick={openCreateDialog} className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="mr-2 h-4 w-4" /> Klinik hinzufügen
+          <Plus className="mr-2 h-4 w-4" /> {t('clinics.add')}
         </Button>
       </div>
 
@@ -167,10 +169,10 @@ export default function ClinicsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Klinik Name</TableHead>
-              <TableHead>Kontakt</TableHead>
-              <TableHead>Adresse</TableHead>
-              <TableHead className="text-right">Aktionen</TableHead>
+              <TableHead>{t('clinics.table.name')}</TableHead>
+              <TableHead>{t('clinics.table.contact')}</TableHead>
+              <TableHead>{t('clinics.table.address')}</TableHead>
+              <TableHead className="text-right">{t('clinics.table.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -183,7 +185,7 @@ export default function ClinicsPage() {
             ) : clinics?.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="h-24 text-center text-slate-500">
-                  Keine Kliniken gefunden.
+                  {t('clinics.messages.empty')}
                 </TableCell>
               </TableRow>
             ) : (
@@ -216,51 +218,51 @@ export default function ClinicsPage() {
         <DialogContent className="sm:max-w-[425px]">
           <form onSubmit={handleSubmit(onSubmit)}>
             <DialogHeader>
-              <DialogTitle>{editingClinic ? "Klinik bearbeiten" : "Neue Klinik anlegen"}</DialogTitle>
+              <DialogTitle>{editingClinic ? t('clinics.edit') : t('clinics.create')}</DialogTitle>
               <DialogDescription>
-                Hinterlegen Sie die grundlegenden Daten der Klinik.
+                {t('clinics.form.description')}
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
+             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="name">Klinik Name *</Label>
-                <Input id="name" {...register("name")} placeholder="z.B. Reha-Klinik Sonnenaufgang" />
-                {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
+                <Label htmlFor="name">{t('clinics.table.name')} *</Label>
+                <Input id="name" {...register("name")} placeholder={t('clinics.form.namePlaceholder')} />
+                {errors.name && <p className="text-sm text-red-500">{errors.name.message as string}</p>}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="email">E-Mail</Label>
-                <Input id="email" type="email" {...register("email")} placeholder="info@klinik.de" />
-                {errors.email && <p className="text-sm text-red-500">{errors.email.message}</p>}
+                <Label htmlFor="email">{t('auth.login.email')}</Label>
+                <Input id="email" type="email" {...register("email")} placeholder="info@clinic.com" />
+                {errors.email && <p className="text-sm text-red-500">{errors.email.message as string}</p>}
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="phone">Telefon</Label>
+               <div className="grid gap-2">
+                <Label htmlFor="phone">{t('patients.form.phone')}</Label>
                 <Input id="phone" {...register("phone")} />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="address">Vollständige Adresse</Label>
+                <Label htmlFor="address">{t('clinics.table.address')}</Label>
                 <Input id="address" {...register("address")} />
               </div>
-              {!editingClinic && (
+               {!editingClinic && (
                 <div className="grid gap-2 p-3 bg-blue-50 rounded-md border border-blue-100">
-                  <Label htmlFor="adminEmail" className="text-blue-700">Initialer Klinik-Admin (E-Mail)</Label>
+                  <Label htmlFor="adminEmail" className="text-blue-700">{t('clinics.form.adminEmail')}</Label>
                   <Input 
                     id="adminEmail" 
                     {...register("adminEmail")} 
-                    placeholder="E-Mail des Admins"
+                    placeholder={t('auth.login.email')}
                     className="bg-white"
                   />
-                  <p className="text-[10px] text-blue-500 italic">Der Nutzer erhält automatisch Admin-Rechte, sobald er sich registriert.</p>
-                  {errors.adminEmail && <p className="text-sm text-red-500">{errors.adminEmail.message}</p>}
+                  <p className="text-[10px] text-blue-500 italic">{t('clinics.form.adminDescription')}</p>
+                  {errors.adminEmail && <p className="text-sm text-red-500">{errors.adminEmail.message as string}</p>}
                 </div>
               )}
             </div>
-            <DialogFooter>
+             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Abbrechen
+                {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Speichern
+                {t('common.save')}
               </Button>
             </DialogFooter>
           </form>
