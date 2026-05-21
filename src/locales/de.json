@@ -245,7 +245,9 @@
       "notes": "Notizen",
       "notesPlaceholder": "Zusätzliche Anmerkungen...",
       "select": "Wählen...",
-      "none": "Keine"
+      "none": "Keine",
+      "suggestedRooms": "Empfohlene Räume",
+      "allRooms": "Alle Räume"
     },
     "status": {
       "scheduled": "Geplant",
@@ -261,6 +263,9 @@
       "successDelete": "Termin gelöscht!",
       "confirmDelete": "Möchten Sie diesen Termin wirklich löschen?",
       "errorSave": "Fehler beim Speichern des Termins.",
+      "roomOccupied": "Besetzt / Kapazität erreicht",
+      "unauthorizedUpdate": "Termine anderer Therapeuten können nicht geändert werden.",
+      "unauthorizedDelete": "Termine anderer Therapeuten können nicht gelöscht werden.",
       "today": "Heute",
       "previous": "Zurück",
       "next": "Weiter",

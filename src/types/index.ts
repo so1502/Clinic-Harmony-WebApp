@@ -41,14 +41,22 @@ export interface Equipment {
   updated_at: string;
 }
 
+export interface RoomEquipment {
+  room_id: string;
+  equipment_id: string;
+  status: 'active' | 'maintenance';
+  equipment?: Equipment;
+}
+
 export interface Room {
   id: string;
   clinic_id: string;
   name: string;
   capacity: number;
   equipment?: string[]; // Legacy
-  room_equipment?: { equipment: Equipment }[];
+  room_equipment?: RoomEquipment[];
 }
+
 
 export interface TherapyType {
   id: string;
