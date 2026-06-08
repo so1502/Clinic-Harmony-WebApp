@@ -94,6 +94,7 @@
   "dashboard": {
     "nav": {
       "home": "Dashboard",
+      "pinboard": "Stecktafel",
       "calendar": "Kalender",
       "patients": "Patienten",
       "team": "Team",
@@ -382,5 +383,31 @@
       "addPatient": "Patient anlegen",
       "manageTeam": "Team verwalten"
     }
+  },
+  "pinboard": {
+    "title": "Stecktafel",
+    "subtitle": "Patientenauslastung planen und verwalten.",
+    "standardBlocks": "Standard-Blöcke",
+    "addBlock": "Block hinzufügen",
+    "blockName": "Blockname",
+    "duration": "Dauer (Min)",
+    "color": "Farbe",
+    "createBlock": "Neuen Block erstellen",
+    "placeholderName": "z.B. Duschen",
+    "selectPatient": "Patient auswählen...",
+    "noPatients": "Keine Patienten verfügbar",
+    "workload": "Auslastung",
+    "scheduledHours": "Geplante Zeit",
+    "noAppointments": "Keine Termine heute",
+    "deleteBlock": "In diesen Bereich ziehen zum Löschen",
+    "dragHereToDelete": "Hierher ziehen zum Löschen",
+    "successCreateBlock": "Standard-Block erstellt!",
+    "successDeleteBlock": "Standard-Block gelöscht!",
+    "errorSaveBlock": "Fehler beim Speichern des Blocks.",
+    "minutes": "Minuten",
+    "hoursShort": "Std.",
+    "time": "Zeit",
+    "save": "Speichern",
+    "cancel": "Abbrechen"
   }
 }

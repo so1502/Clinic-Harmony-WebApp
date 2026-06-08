@@ -14,7 +14,8 @@ import {
   Menu, 
   LayoutDashboard,
   Building2,
-  Globe
+  Globe,
+  LayoutGrid
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -50,6 +51,7 @@ export function DashboardLayout() {
 
   const navItems = [
     { name: t('dashboard.nav.home'), href: "/dashboard", icon: LayoutDashboard },
+    { name: t('dashboard.nav.pinboard'), href: "/dashboard/pinboard", icon: LayoutGrid },
     { name: t('dashboard.nav.calendar'), href: "/dashboard/calendar", icon: Calendar },
     { name: t('dashboard.nav.patients'), href: "/dashboard/patients", icon: Users },
     { name: t('dashboard.nav.team'), href: "/dashboard/therapists", icon: UserSquare2 },

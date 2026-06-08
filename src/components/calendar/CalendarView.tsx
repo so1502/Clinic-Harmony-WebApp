@@ -50,12 +50,12 @@ export function CalendarView({ appointments, activeClinicId, onSelectEvent, onSe
   const events: CalendarEvent[] = useMemo(() => {
     return appointments.map((apt) => ({
       id: apt.id,
-      title: `${apt.patients?.full_name || t('common.unknown')} - ${apt.therapy_types?.name || t('calendar.form.none')}`,
+      title: `${apt.patients?.full_name || t('common.unknown')} - ${apt.therapy_types?.name || apt.notes || t('calendar.form.none')}`,
       start: new Date(apt.start_time),
       end: new Date(apt.end_time),
       resource: apt,
     }));
-  }, [appointments]);
+  }, [appointments, t]);
 
   const updateAppointmentMutation = useMutation({
     mutationFn: async ({ id, start, end, therapist_id, room_id }: { id: string; start: Date; end: Date; therapist_id: string; room_id: string | null }) => {
