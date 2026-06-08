@@ -453,6 +453,7 @@
     "hoursShort": "Std.",
     "time": "Zeit",
     "save": "Speichern",
-    "cancel": "Abbrechen"
+    "cancel": "Abbrechen",
+    "helpText": "Zieh diese Blöcke einfach nach rechts auf das Feld eines Patienten, um den Termin zu planen. Blöcke benötigen keinen Therapeuten."
   }
 }

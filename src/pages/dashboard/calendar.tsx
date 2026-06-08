@@ -53,7 +53,7 @@ export default function CalendarPage() {
         .eq("clinic_id", activeClinicId);
         
       if (error) throw error;
-      return data as Appointment[];
+      return (data as Appointment[]).filter(apt => apt.therapist_id !== null);
     },
     enabled: !!activeClinicId,
   });

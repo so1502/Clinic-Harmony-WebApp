@@ -28,12 +28,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const generateTimeSlots = () => {
+  const slots = [];
+  let hour = 7;
+  let minute = 30;
+  while (hour < 17 || (hour === 17 && minute === 0)) {
+    const hStr = hour.toString().padStart(2, "0");
+    const mStr = minute.toString().padStart(2, "0");
+    slots.push(`${hStr}:${mStr}`);
+    minute += 15;
+    if (minute === 60) {
+      hour += 1;
+      minute = 0;
+    }
+  }
+  return slots;
+};
+
 // Config parameters for the Pinboard time grid
-const TIME_SLOTS = [
-  "07:30", "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-  "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00",
-  "16:30", "17:00"
-];
+const TIME_SLOTS = generateTimeSlots();
 
 const parseTimeToMinutes = (timeStr: string) => {
   const [h, m] = timeStr.split(":").map(Number);
@@ -41,10 +54,10 @@ const parseTimeToMinutes = (timeStr: string) => {
 };
 
 const GRID_START_MINUTES = parseTimeToMinutes("07:30"); // 450 min
-const GRID_END_MINUTES = parseTimeToMinutes("17:30");   // 1050 min
-const ROW_HEIGHT = 50; // px height of a 30 min row
-const MINUTE_HEIGHT = ROW_HEIGHT / 30; // px per minute (approx 1.67px/min)
-const GRID_TOTAL_HEIGHT = (TIME_SLOTS.length) * ROW_HEIGHT; // 1000px
+const GRID_END_MINUTES = parseTimeToMinutes("18:00");   // 1080 min
+const ROW_HEIGHT = 30; // px height of a 15 min row
+const MINUTE_HEIGHT = ROW_HEIGHT / 15; // 2px per minute
+const GRID_TOTAL_HEIGHT = TIME_SLOTS.length * ROW_HEIGHT; // 39 * 30 = 1170px
 
 const PRESET_COLORS = [
   { value: "#3b82f6", name: "Blue" },
@@ -73,6 +86,9 @@ export default function PinboardPage() {
   
   // State: patient IDs displayed in the 3 columns
   const [colPatientIds, setColPatientIds] = useState<(string | null)[]>([null, null, null]);
+
+  // State: temporary custom end times during active drag resizing for real-time visual feedback
+  const [tempResizedApts, setTempResizedApts] = useState<Record<string, string>>({});
 
   // State: standard blocks templates (managed locally in localStorage per clinic)
   const [standardBlocks, setStandardBlocks] = useState<StandardBlock[]>([]);
@@ -249,6 +265,29 @@ export default function PinboardPage() {
     return patients.find(p => p.id === id) || null;
   };
 
+  // Helper: Check if an appointment overlaps with existing ones for the same patient
+  const checkLocalPatientOverlap = (
+    patientId: string,
+    start: Date,
+    end: Date,
+    excludeAptId?: string
+  ): boolean => {
+    if (!appointments) return false;
+    
+    const targetStart = start.getTime();
+    const targetEnd = end.getTime();
+    
+    return appointments.some(apt => {
+      if (apt.patient_id !== patientId) return false;
+      if (excludeAptId && apt.id === excludeAptId) return false;
+      
+      const aptStart = new Date(apt.start_time).getTime();
+      const aptEnd = new Date(apt.end_time).getTime();
+      
+      return targetStart < aptEnd && targetEnd > aptStart;
+    });
+  };
+
   // Helper: Calculate Patient daily workload in minutes and text
   const getPatientWorkload = (patientId: string | null) => {
     if (!patientId || !appointments) return { minutes: 0, text: `0 ${t('pinboard.hoursShort')} 0 Min` };
@@ -299,6 +338,65 @@ export default function PinboardPage() {
     e.dataTransfer.effectAllowed = "move";
   };
 
+  const handleResizeStart = (e: React.MouseEvent, apt: Appointment) => {
+    e.stopPropagation();
+    e.preventDefault();
+    
+    const initialY = e.clientY;
+    const initialEnd = new Date(apt.end_time);
+    const initialStart = new Date(apt.start_time);
+    
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaY = moveEvent.clientY - initialY;
+      // ROW_HEIGHT (30px) = 15 minutes. So 2px = 1 minute.
+      const deltaMinutes = Math.round(deltaY / ROW_HEIGHT) * 15;
+      
+      const newEnd = new Date(initialEnd.getTime() + deltaMinutes * 60 * 1000);
+      
+      // Keep duration at least 15 minutes
+      if (newEnd.getTime() - initialStart.getTime() >= 15 * 60 * 1000) {
+        setTempResizedApts(prev => ({
+          ...prev,
+          [apt.id]: newEnd.toISOString()
+        }));
+      }
+    };
+    
+    const handleMouseUp = (upEvent: MouseEvent) => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      
+      const deltaY = upEvent.clientY - initialY;
+      const deltaMinutes = Math.round(deltaY / ROW_HEIGHT) * 15;
+      const newEnd = new Date(initialEnd.getTime() + deltaMinutes * 60 * 1000);
+      
+      // Reset temp resized state
+      setTempResizedApts(prev => {
+        const next = { ...prev };
+        delete next[apt.id];
+        return next;
+      });
+
+      if (newEnd.getTime() - initialStart.getTime() >= 15 * 60 * 1000) {
+        // Overlap check
+        if (checkLocalPatientOverlap(apt.patient_id, initialStart, newEnd, apt.id)) {
+          toast.error("Terminkonflikt: Diese Größenänderung überschneidet sich mit einem anderen Termin.");
+          return;
+        }
+        
+        updateAppointmentMutation.mutate({
+          id: apt.id,
+          patient_id: apt.patient_id,
+          start_time: apt.start_time,
+          end_time: newEnd.toISOString()
+        });
+      }
+    };
+    
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+  };
+
   // Drop targets: Time cell dropped handlers
   const handleDropOnCell = (e: React.DragEvent, colPatientId: string | null, timeSlotStr: string) => {
     e.preventDefault();
@@ -315,6 +413,12 @@ export default function PinboardPage() {
       const block: StandardBlock = JSON.parse(blockStr);
 
       const endDateTime = new Date(startDateTime.getTime() + block.duration * 60 * 1000);
+
+      // Overlap check
+      if (checkLocalPatientOverlap(colPatientId, startDateTime, endDateTime)) {
+        toast.error("Terminkonflikt: Der Patient hat in dieser Zeit bereits einen Termin.");
+        return;
+      }
 
       // Create new therapist-less block appointment
       const newApt = {
@@ -338,6 +442,12 @@ export default function PinboardPage() {
 
       const durationMs = new Date(apt.end_time).getTime() - new Date(apt.start_time).getTime();
       const endDateTime = new Date(startDateTime.getTime() + durationMs);
+
+      // Overlap check
+      if (checkLocalPatientOverlap(colPatientId, startDateTime, endDateTime, aptId)) {
+        toast.error("Terminkonflikt: Der Patient hat in dieser Zeit bereits einen Termin.");
+        return;
+      }
 
       updateAppointmentMutation.mutate({
         id: aptId,
@@ -507,7 +617,7 @@ export default function PinboardPage() {
 
             <div className="flex items-start gap-2 bg-slate-50 p-2.5 rounded-lg border border-slate-100 text-[11px] text-slate-500">
               <Info className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
-              <p>Zieh diese Blöcke einfach nach rechts auf das Feld eines Patienten, um den Termin zu planen. Blöcke benötigen keinen Therapeuten.</p>
+              <p>{t('pinboard.helpText')}</p>
             </div>
           </div>
 
@@ -632,18 +742,24 @@ export default function PinboardPage() {
 
                   {/* Absolute positioned magnetic-like scheduled cards */}
                   {patientId && patientAppointments.map(apt => {
-                    const { top, height } = getCardLayout(apt.start_time, apt.end_time);
+                    const currentEndTime = tempResizedApts[apt.id] || apt.end_time;
+                    const { top, height } = getCardLayout(apt.start_time, currentEndTime);
                     
                     // Determine styling based on whether it is a standard block or standard therapy type
                     const isStandardBlock = !apt.therapy_type_id;
+                    const titleName = apt.therapy_types?.name || apt.notes || t('common.unknown');
+                    
+                    // Find matching standard block color from templates list
+                    const matchedBlock = isStandardBlock 
+                      ? standardBlocks.find(b => b.name.toLowerCase() === titleName.toLowerCase()) 
+                      : null;
+                    const blockColor = matchedBlock ? matchedBlock.color : "#94a3b8";
+
                     const cardColor = apt.therapy_types?.color || "#e0e7ff"; // Soft blue/indigo fallback
                     const cardTextColor = apt.therapy_types?.color ? "#ffffff" : "#1e293b"; // Dark text for custom light blocks, white for therapy colors
-                    
-                    // Standard blocks are stored with text inside `notes`, therapy types use `name`
-                    const titleName = apt.therapy_types?.name || apt.notes || t('common.unknown');
                     const therapistName = apt.therapists?.profiles?.full_name || null;
                     const roomName = apt.rooms?.name || null;
-                    const durationMins = Math.round((new Date(apt.end_time).getTime() - new Date(apt.start_time).getTime()) / 60000);
+                    const durationMins = Math.round((new Date(currentEndTime).getTime() - new Date(apt.start_time).getTime()) / 60000);
 
                     return (
                       <div
@@ -654,10 +770,10 @@ export default function PinboardPage() {
                         style={{
                           top: `${top}px`,
                           height: `${height}px`,
-                          backgroundColor: isStandardBlock ? "#ffffff" : cardColor,
-                          borderLeft: `5px solid ${isStandardBlock ? "#94a3b8" : cardColor}`,
+                          backgroundColor: isStandardBlock ? (blockColor + "15") : cardColor,
+                          borderLeft: `5px solid ${isStandardBlock ? blockColor : cardColor}`,
                           color: isStandardBlock ? "#1e293b" : cardTextColor,
-                          borderColor: isStandardBlock ? "#e2e8f0" : "transparent"
+                          borderColor: isStandardBlock ? (blockColor + "30") : "transparent"
                         }}
                       >
                         <div className="flex justify-between items-start gap-1">
@@ -667,7 +783,7 @@ export default function PinboardPage() {
                             </span>
                             <span className={`text-[10px] ${isStandardBlock ? "text-slate-400" : "text-white/80"} flex items-center gap-0.5 mt-0.5`}>
                               <Clock className="w-2.5 h-2.5" />
-                              {format(new Date(apt.start_time), "HH:mm")} - {format(new Date(apt.end_time), "HH:mm")} ({durationMins} Min)
+                              {format(new Date(apt.start_time), "HH:mm")} - {format(new Date(currentEndTime), "HH:mm")} ({durationMins} Min)
                             </span>
                           </div>
 
@@ -708,6 +824,15 @@ export default function PinboardPage() {
                             )}
                           </div>
                         )}
+
+                        {/* Resize handle */}
+                        <div 
+                          draggable={false}
+                          onMouseDown={(e) => handleResizeStart(e, apt)}
+                          className="absolute bottom-0 left-0 right-0 h-1.5 cursor-ns-resize flex items-center justify-center hover:bg-slate-500/20 group-hover:bg-slate-400/10 transition-colors z-30"
+                        >
+                          <div className="w-6 h-0.5 bg-slate-400/40 rounded-full group-hover:bg-slate-400/60" />
+                        </div>
                       </div>
                     );
                   })}

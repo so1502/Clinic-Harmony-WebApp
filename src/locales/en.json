@@ -453,6 +453,7 @@
     "hoursShort": "hrs",
     "time": "Time",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "helpText": "Simply drag these blocks to the right onto a patient's column to schedule the activity. Blocks do not require a therapist."
   }
 }

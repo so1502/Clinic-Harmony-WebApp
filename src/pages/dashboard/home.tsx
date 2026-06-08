@@ -42,6 +42,7 @@ export default function HomePage() {
         supabase.from("appointments")
           .select("*", { count: "exact", head: true })
           .eq("clinic_id", activeClinicId)
+          .not("therapist_id", "is", null)
           .gte("start_time", new Date().toISOString().split('T')[0] + 'T00:00:00')
           .lte("start_time", new Date().toISOString().split('T')[0] + 'T23:59:59')
       ]);
@@ -73,6 +74,7 @@ export default function HomePage() {
           therapy_types (id, name, color)
         `)
         .eq("clinic_id", activeClinicId)
+        .not("therapist_id", "is", null)
         .gte("start_time", today + 'T00:00:00')
         .lte("start_time", today + 'T23:59:59')
         .order("start_time");
