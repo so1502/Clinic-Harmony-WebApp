@@ -58,7 +58,7 @@ export function CalendarView({ appointments, activeClinicId, onSelectEvent, onSe
   }, [appointments, t]);
 
   const updateAppointmentMutation = useMutation({
-    mutationFn: async ({ id, start, end, therapist_id, room_id }: { id: string; start: Date; end: Date; therapist_id: string; room_id: string | null }) => {
+    mutationFn: async ({ id, start, end, therapist_id, patient_id, room_id }: { id: string; start: Date; end: Date; therapist_id: string; patient_id: string; room_id: string | null }) => {
       if (!activeClinicId) throw new Error(t('patients.messages.selectClinic'));
 
       // Check for conflicts
@@ -67,6 +67,7 @@ export function CalendarView({ appointments, activeClinicId, onSelectEvent, onSe
         start,
         end,
         therapist_id,
+        patient_id,
         room_id,
         id
       );
@@ -75,18 +76,23 @@ export function CalendarView({ appointments, activeClinicId, onSelectEvent, onSe
         throw new Error(conflict.message);
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('appointments')
         .update({
           start_time: start.toISOString(),
           end_time: end.toISOString(),
         })
-        .eq('id', id);
+        .eq('id', id)
+        .select();
       
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error(t('calendar.messages.unauthorizedUpdate'));
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['appointments-all'] });
       toast.success(t('calendar.messages.successUpdate'));
     },
     onError: (error: Error) => {
@@ -102,6 +108,7 @@ export function CalendarView({ appointments, activeClinicId, onSelectEvent, onSe
         start, 
         end, 
         therapist_id: event.resource.therapist_id,
+        patient_id: event.resource.patient_id,
         room_id: event.resource.room_id
       });
     },
@@ -116,6 +123,7 @@ export function CalendarView({ appointments, activeClinicId, onSelectEvent, onSe
         start, 
         end, 
         therapist_id: event.resource.therapist_id,
+        patient_id: event.resource.patient_id,
         room_id: event.resource.room_id
       });
     },

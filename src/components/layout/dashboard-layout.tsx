@@ -15,7 +15,8 @@ import {
   LayoutDashboard,
   Building2,
   Globe,
-  LayoutGrid
+  LayoutGrid,
+  Wrench
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -57,6 +58,7 @@ export function DashboardLayout() {
     { name: t('dashboard.nav.team'), href: "/dashboard/therapists", icon: UserSquare2 },
     { name: t('dashboard.nav.therapyTypes'), href: "/dashboard/therapy-types", icon: Activity },
     { name: t('dashboard.nav.rooms'), href: "/dashboard/rooms", icon: DoorOpen },
+    { name: t('dashboard.nav.equipment'), href: "/dashboard/equipment", icon: Wrench },
   ];
 
   if (role === "system_admin") {

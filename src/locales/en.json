@@ -100,6 +100,7 @@
       "team": "Team",
       "therapyTypes": "Therapy Types",
       "rooms": "Rooms",
+      "equipment": "Equipment",
       "clinicManagement": "Clinic Management"
     },
     "user": {
@@ -245,7 +246,9 @@
       "notes": "Notes",
       "notesPlaceholder": "Additional notes...",
       "select": "Select...",
-      "none": "None"
+      "none": "None",
+      "suggestedRooms": "Suggested Rooms",
+      "allRooms": "All Rooms"
     },
     "status": {
       "scheduled": "Scheduled",
@@ -261,6 +264,9 @@
       "successDelete": "Appointment deleted!",
       "confirmDelete": "Are you sure you want to delete this appointment?",
       "errorSave": "Error saving appointment.",
+      "roomOccupied": "Occupied / Capacity reached",
+      "unauthorizedUpdate": "Appointments of other therapists cannot be changed.",
+      "unauthorizedDelete": "Appointments of other therapists cannot be deleted.",
       "today": "Today",
       "previous": "Previous",
       "next": "Next",
@@ -302,6 +308,45 @@
       "confirmDelete": "Are you sure you want to delete this room?",
       "empty": "No rooms found.",
       "selectClinic": "Please select a clinic or create one to manage rooms."
+    }
+  },
+  "equipment": {
+    "title": "Equipment & Devices",
+    "subtitle": "Manage your clinic's medical equipment.",
+    "add": "Add Device",
+    "edit": "Edit Device",
+    "create": "Create New Device",
+    "status": {
+      "active": "Active",
+      "maintenance": "Maintenance"
+    },
+    "form": {
+      "name": "Device Name",
+      "description": "Description",
+      "status": "Status",
+      "namePlaceholder": "e.g. Ultrasound Machine",
+      "descriptionPlaceholder": "Serial number or details"
+    },
+    "table": {
+      "name": "Name",
+      "description": "Details",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "messages": {
+      "successCreate": "Device created!",
+      "successUpdate": "Device updated!",
+      "successDelete": "Device deleted!",
+      "confirmDelete": "Are you sure you want to delete this device?",
+      "empty": "No devices found.",
+      "selectClinic": "Please select a clinic to manage equipment."
+    },
+    "scheduling": {
+      "required": "Required Equipment",
+      "onlyAvailable": "Show only available rooms",
+      "seeAll": "Show all rooms",
+      "warningMaintenance": "Booking not possible: Device {{name}} is under maintenance.",
+      "warningMissing": "Booking not possible: Room does not have {{name}}."
     }
   },
   "therapyTypes": {

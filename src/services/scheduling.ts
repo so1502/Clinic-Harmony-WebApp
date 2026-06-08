@@ -3,32 +3,31 @@ import type { Appointment } from "@/types";
 
 export interface ConflictResult {
   hasConflict: boolean;
-  type?: 'therapist' | 'room' | 'both';
+  type?: 'therapist' | 'room' | 'patient' | 'multiple';
   conflictingAppointment?: Appointment;
   message?: string;
 }
 
 /**
- * Checks for overlapping appointments for a specific therapist or room within a clinic.
+ * Checks for overlapping appointments for a specific therapist, patient, or room within a clinic.
  */
 export async function checkAppointmentConflicts(
   clinicId: string,
   startTime: Date | string,
   endTime: Date | string,
   therapistId: string,
+  patientId: string,
   roomId?: string | null,
   excludeAppointmentId?: string
 ): Promise<ConflictResult> {
   const start = typeof startTime === 'string' ? startTime : startTime.toISOString();
   const end = typeof endTime === 'string' ? endTime : endTime.toISOString();
 
-  // Query appointments that overlap with the given time range
-  // Overlap logic: (A.start < B.end) AND (A.end > B.start)
   let query = supabase
     .from("appointments")
     .select("*, therapists(*), rooms(*), patients(*)")
     .eq("clinic_id", clinicId)
-    .neq("status", "cancelled") // Ignore cancelled appointments
+    .neq("status", "cancelled")
     .lt("start_time", end)
     .gt("end_time", start);
 
@@ -47,16 +46,39 @@ export async function checkAppointmentConflicts(
     return { hasConflict: false };
   }
 
-  // Check specifically for therapist or room overlap
-  const therapistConflict = data.find(a => a.therapist_id === therapistId);
-  const roomConflict = roomId ? data.find(a => a.room_id === roomId) : null;
+  const therapistConflict = data.find(a => String(a.therapist_id) === String(therapistId));
+  const patientConflict = data.find(a => String(a.patient_id) === String(patientId));
+  
+  let roomConflict = null;
+  if (roomId) {
+    const overlappingInRoom = data.filter(a => String(a.room_id) === String(roomId));
+    if (overlappingInRoom.length > 0) {
+      // Use capacity from the joined rooms table, fallback to 1
+      const capacityRaw = overlappingInRoom[0].rooms?.capacity;
+      const roomCapacity = capacityRaw ? Number(capacityRaw) : 1;
+      
+      if (overlappingInRoom.length >= roomCapacity) {
+        roomConflict = overlappingInRoom[0];
+      }
+    }
+  }
 
-  if (therapistConflict && roomConflict) {
+  const conflictCount = (therapistConflict ? 1 : 0) + (patientConflict ? 1 : 0) + (roomConflict ? 1 : 0);
+
+  if (conflictCount > 1) {
     return {
       hasConflict: true,
-      type: 'both',
-      conflictingAppointment: therapistConflict as Appointment,
-      message: "Sowohl der Therapeut als auch der Raum sind zu dieser Zeit bereits belegt."
+      type: 'multiple',
+      message: "Es gibt mehrere Terminüberschneidungen (Therapeut, Patient oder Raum)."
+    };
+  }
+
+  if (patientConflict) {
+    return {
+      hasConflict: true,
+      type: 'patient',
+      conflictingAppointment: patientConflict as Appointment,
+      message: `Der Patient ist bereits für einen anderen Termin zu dieser Zeit gebucht.`
     };
   }
 
@@ -74,7 +96,7 @@ export async function checkAppointmentConflicts(
       hasConflict: true,
       type: 'room',
       conflictingAppointment: roomConflict as Appointment,
-      message: `Der Raum ist bereits durch einen anderen Termin belegt.`
+      message: `Der Raum ist bereits durch einen anderen Termin belegt (Kapazität erreicht).`
     };
   }
 

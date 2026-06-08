@@ -31,13 +31,32 @@ export interface UserContextType {
   signOut: () => Promise<void>;
 }
 
+export interface Equipment {
+  id: string;
+  clinic_id: string;
+  name: string;
+  description: string | null;
+  status: 'active' | 'maintenance';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RoomEquipment {
+  room_id: string;
+  equipment_id: string;
+  status: 'active' | 'maintenance';
+  equipment?: Equipment;
+}
+
 export interface Room {
   id: string;
   clinic_id: string;
   name: string;
   capacity: number;
-  equipment: string[];
+  equipment?: string[]; // Legacy
+  room_equipment?: RoomEquipment[];
 }
+
 
 export interface TherapyType {
   id: string;
@@ -46,6 +65,7 @@ export interface TherapyType {
   description: string | null;
   duration_minutes: number;
   color: string;
+  therapy_type_equipment?: { equipment: Equipment }[];
 }
 
 export interface Therapist {
@@ -102,6 +122,7 @@ export interface Appointment {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  required_equipment_ids: string[];
   
   // Optional joined relations
   therapists?: Therapist;
