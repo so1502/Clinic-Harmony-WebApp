@@ -6,7 +6,6 @@ import { DashboardLayout } from "./components/layout/dashboard-layout";
 import LoginPage from "./pages/auth/login";
 import RegisterPage from "./pages/auth/register";
 import { Toaster } from "@/components/ui/sonner";
-import { lazy } from "react";
 
 import RoomsPage from "./pages/dashboard/rooms";
 import TherapyTypesPage from "./pages/dashboard/therapy-types";
@@ -14,8 +13,8 @@ import PatientsPage from "./pages/dashboard/patients";
 import TeamPage from "./pages/dashboard/team";
 import ClinicsPage from "./pages/dashboard/clinics";
 import CalendarPage from "./pages/dashboard/calendar";
+import PinboardPage from "./pages/dashboard/pinboard";
 import EquipmentPage from "./pages/dashboard/equipment";
-
 // Placeholder components for Step 4
 import HomePage from "./pages/dashboard/home";
 import LandingPage from "./pages/landing/LandingPage";
@@ -47,6 +46,7 @@ function App() {
             <Route path="/dashboard" element={<ProtectedRoute />}>
               <Route element={<DashboardLayout />}>
                 <Route index element={<HomePage />} />
+                <Route path="pinboard" element={<PinboardPage />} />
                 <Route path="calendar" element={<CalendarPage />} />
                 <Route path="patients" element={<PatientsPage />} />
                 <Route path="therapists" element={<TeamPage />} />

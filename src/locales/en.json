@@ -94,6 +94,7 @@
   "dashboard": {
     "nav": {
       "home": "Dashboard",
+      "pinboard": "Pinboard",
       "calendar": "Calendar",
       "patients": "Patients",
       "team": "Team",
@@ -427,5 +428,32 @@
       "addPatient": "Add Patient",
       "manageTeam": "Manage Team"
     }
+  },
+  "pinboard": {
+    "title": "Pinboard",
+    "subtitle": "Schedule and manage patient workload.",
+    "standardBlocks": "Standard Blocks",
+    "addBlock": "Add Block",
+    "blockName": "Block Name",
+    "duration": "Duration (Min)",
+    "color": "Color",
+    "createBlock": "Create New Block",
+    "placeholderName": "e.g. Showering",
+    "selectPatient": "Select Patient...",
+    "noPatients": "No patients available",
+    "workload": "Workload",
+    "scheduledHours": "Scheduled Time",
+    "noAppointments": "No appointments today",
+    "deleteBlock": "Drag to this area to delete",
+    "dragHereToDelete": "Drag here to delete",
+    "successCreateBlock": "Standard block created!",
+    "successDeleteBlock": "Standard block deleted!",
+    "errorSaveBlock": "Error saving block.",
+    "minutes": "Minutes",
+    "hoursShort": "hrs",
+    "time": "Time",
+    "save": "Save",
+    "cancel": "Cancel",
+    "helpText": "Simply drag these blocks to the right onto a patient's column to schedule the activity. Blocks do not require a therapist."
   }
 }
