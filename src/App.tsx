@@ -14,6 +14,7 @@ import PatientsPage from "./pages/dashboard/patients";
 import TeamPage from "./pages/dashboard/team";
 import ClinicsPage from "./pages/dashboard/clinics";
 import CalendarPage from "./pages/dashboard/calendar";
+import EquipmentPage from "./pages/dashboard/equipment";
 
 // Placeholder components for Step 4
 import HomePage from "./pages/dashboard/home";
@@ -51,6 +52,7 @@ function App() {
                 <Route path="therapists" element={<TeamPage />} />
                 <Route path="therapy-types" element={<TherapyTypesPage />} />
                 <Route path="rooms" element={<RoomsPage />} />
+                <Route path="equipment" element={<EquipmentPage />} />
                 <Route path="clinics" element={<ClinicsPage />} />
               </Route>
             </Route>
