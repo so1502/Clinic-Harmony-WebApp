@@ -455,5 +455,33 @@
     "save": "Save",
     "cancel": "Cancel",
     "helpText": "Simply drag these blocks to the right onto a patient's column to schedule the activity. Blocks do not require a therapist."
+  },
+  "aiScheduler": {
+    "triggerButton": "AI Assistant",
+    "title": "AI Smart Scheduler",
+    "subtitle": "Automatically create conflict-free appointment series for patients.",
+    "selectPatient": "Select patient...",
+    "instructionLabel": "Describe planned treatment",
+    "instructionPlaceholder": "e.g., Patient needs 10x physiotherapy and 5x ultrasound therapy in the next 3 weeks",
+    "presetTitle": "Quick-select Presets:",
+    "preset1": "10x Physio & 5x Ultrasound in 3 weeks",
+    "preset2": "5x Lymphatic drainage in 2 weeks",
+    "preset3": "3x Massage in 1 week",
+    "missingApiKey": "Gemini API key is missing! Please create a file named '.env.local' in the project root and add 'VITE_GEMINI_API_KEY=your_key'. You can get a free key from Google AI Studio.",
+    "generateButton": "Generate Schedule",
+    "generating": "AI is computing optimal schedule...",
+    "previewTitle": "AI Proposal (Please review)",
+    "previewSubtitle": "You can delete unwanted appointments before booking them permanently.",
+    "colDateTime": "Date & Time",
+    "colTherapy": "Therapy Type",
+    "colTherapist": "Therapist",
+    "colRoom": "Room",
+    "colNotes": "Note",
+    "noProposals": "No proposals generated yet. Enter instructions above and click 'Generate Schedule'.",
+    "bookButton": "Book Schedule ({{count}} Appointments)",
+    "successMessage": "{{count}} appointments successfully booked!",
+    "errorMessage": "Error during AI generation. Please check your inputs or the API key.",
+    "noTherapistNeeded": "No therapist needed",
+    "noRoomNeeded": "No room needed"
   }
 }
