@@ -9,6 +9,7 @@ import { CalendarView } from "@/components/calendar/CalendarView";
 import type { CalendarEvent } from "@/components/calendar/CalendarView";
 import { EventDialog } from "@/components/calendar/EventDialog";
 import { AISchedulerDialog } from "@/components/calendar/AISchedulerDialog";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import type {  Appointment  } from "@/types";
 
 export default function CalendarPage() {
@@ -55,7 +56,7 @@ export default function CalendarPage() {
         .eq("clinic_id", activeClinicId);
         
       if (error) throw error;
-      return (data as Appointment[]).filter(apt => apt.therapist_id !== null);
+      return ((data || []) as Appointment[]).filter(apt => apt && apt.therapist_id !== null);
     },
     enabled: !!activeClinicId,
   });
@@ -69,54 +70,56 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">{t('calendar.title')}</h2>
-          <p className="text-sm text-slate-500">{t('calendar.subtitle')}</p>
+    <ErrorBoundary fallbackTitle={t('calendar.title')}>
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight text-slate-900">{t('calendar.title')}</h2>
+            <p className="text-sm text-slate-500">{t('calendar.subtitle')}</p>
+          </div>
+          <div className="flex gap-2">
+            {/* Filters will go here later */}
+            <Button 
+              onClick={() => setIsAISchedulerOpen(true)} 
+              className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-700 hover:via-indigo-700 hover:to-violet-700 text-white shadow-md font-semibold gap-2 border-0"
+            >
+              <Sparkles className="h-4 w-4 text-yellow-300 animate-pulse" /> 
+              {t('aiScheduler.triggerButton')}
+            </Button>
+            <Button onClick={handleOpenCreate} className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="mr-2 h-4 w-4" /> {t('calendar.newEvent')}
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          {/* Filters will go here later */}
-          <Button 
-            onClick={() => setIsAISchedulerOpen(true)} 
-            className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-700 hover:via-indigo-700 hover:to-violet-700 text-white shadow-md font-semibold gap-2 border-0"
-          >
-            <Sparkles className="h-4 w-4 text-yellow-300 animate-pulse" /> 
-            {t('aiScheduler.triggerButton')}
-          </Button>
-          <Button onClick={handleOpenCreate} className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="mr-2 h-4 w-4" /> {t('calendar.newEvent')}
-          </Button>
-        </div>
-      </div>
 
-      {isLoading ? (
-        <div className="flex h-[750px] items-center justify-center rounded-xl border bg-white shadow-sm">
-          <Loader2 className="h-8 w-8 animate-spin text-slate-300" />
-        </div>
-      ) : (
-        <>
-          <CalendarView 
-            appointments={appointments || []} 
-            activeClinicId={activeClinicId} 
-            onSelectEvent={handleSelectEvent}
-            onSelectSlot={handleSelectSlot}
-          />
-          <EventDialog
-            isOpen={isDialogOpen}
-            onOpenChange={setIsDialogOpen}
-            activeClinicId={activeClinicId}
-            selectedAppointment={selectedAppointment}
-            selectedSlot={selectedSlot}
-          />
-          <AISchedulerDialog
-            isOpen={isAISchedulerOpen}
-            onOpenChange={setIsAISchedulerOpen}
-            activeClinicId={activeClinicId}
-          />
-        </>
-      )}
-    </div>
+        {isLoading ? (
+          <div className="flex h-[calc(100vh-210px)] min-h-[750px] items-center justify-center rounded-xl border bg-white shadow-sm">
+            <Loader2 className="h-8 w-8 animate-spin text-slate-300" />
+          </div>
+        ) : (
+          <>
+            <CalendarView 
+              appointments={appointments || []} 
+              activeClinicId={activeClinicId} 
+              onSelectEvent={handleSelectEvent}
+              onSelectSlot={handleSelectSlot}
+            />
+            <EventDialog
+              isOpen={isDialogOpen}
+              onOpenChange={setIsDialogOpen}
+              activeClinicId={activeClinicId}
+              selectedAppointment={selectedAppointment}
+              selectedSlot={selectedSlot}
+            />
+            <AISchedulerDialog
+              isOpen={isAISchedulerOpen}
+              onOpenChange={setIsAISchedulerOpen}
+              activeClinicId={activeClinicId}
+            />
+          </>
+        )}
+      </div>
+    </ErrorBoundary>
   );
 }
 
