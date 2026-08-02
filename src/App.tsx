@@ -18,6 +18,7 @@ import EquipmentPage from "./pages/dashboard/equipment";
 // Placeholder components for Step 4
 import HomePage from "./pages/dashboard/home";
 import LandingPage from "./pages/landing/LandingPage";
+import PresentationPage from "./pages/presentation/PresentationPage";
 import { useAuth } from "./hooks/use-auth";
 
 function RootRoute() {
@@ -59,6 +60,9 @@ function App() {
 
             {/* Public Root Route */}
             <Route path="/" element={<RootRoute />} />
+            
+            {/* Public Presentation Slide-Deck */}
+            <Route path="/presentation" element={<PresentationPage />} />
             
             {/* Catch-all route */}
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

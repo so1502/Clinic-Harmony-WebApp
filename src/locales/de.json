@@ -455,5 +455,33 @@
     "save": "Speichern",
     "cancel": "Abbrechen",
     "helpText": "Zieh diese Blöcke einfach nach rechts auf das Feld eines Patienten, um den Termin zu planen. Blöcke benötigen keinen Therapeuten."
+  },
+  "aiScheduler": {
+    "triggerButton": "AI-Assistent",
+    "title": "KI-Terminplaner",
+    "subtitle": "Erstelle automatisch konfliktfreie Terminserien für Patienten.",
+    "selectPatient": "Patient auswählen...",
+    "instructionLabel": "Geplantes Vorhaben beschreiben",
+    "instructionPlaceholder": "z.B. Patient benötigt 10x Physiotherapie und 5x Ultraschalltherapie in den nächsten 3 Wochen",
+    "presetTitle": "Schnellauswahl-Vorlagen:",
+    "preset1": "10x Physio & 5x Ultraschall in 3 Wochen",
+    "preset2": "5x Lymphdrainage in 2 Wochen",
+    "preset3": "3x Massage in 1 Woche",
+    "missingApiKey": "Gemini API-Key fehlt! Bitte erstelle eine Datei namens '.env.local' im Stammverzeichnis des Projekts und füge 'VITE_GEMINI_API_KEY=dein_schluessel' hinzu. Einen kostenlosen Key erhältst du in Google AI Studio.",
+    "generateButton": "Zeitplan generieren",
+    "generating": "KI berechnet optimalen Zeitplan...",
+    "previewTitle": "Vorschlag der KI (Bitte prüfen)",
+    "previewSubtitle": "Du kannst unerwünschte Termine löschen, bevor du sie endgültig buchst.",
+    "colDateTime": "Datum & Uhrzeit",
+    "colTherapy": "Therapieform",
+    "colTherapist": "Therapeut",
+    "colRoom": "Raum",
+    "colNotes": "Notiz",
+    "noProposals": "Noch keine Vorschläge generiert. Gib oben eine Anweisung ein und klicke auf 'Zeitplan generieren'.",
+    "bookButton": "Zeitplan buchen ({{count}} Termine)",
+    "successMessage": "{{count}} Termine erfolgreich gebucht!",
+    "errorMessage": "Fehler bei der KI-Generierung. Bitte prüfe deine Eingabe oder den API-Key.",
+    "noTherapistNeeded": "Kein Therapeut benötigt",
+    "noRoomNeeded": "Kein Raum benötigt"
   }
 }

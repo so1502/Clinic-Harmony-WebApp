@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, Sparkles } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { CalendarView } from "@/components/calendar/CalendarView";
 import type { CalendarEvent } from "@/components/calendar/CalendarView";
 import { EventDialog } from "@/components/calendar/EventDialog";
+import { AISchedulerDialog } from "@/components/calendar/AISchedulerDialog";
 import type {  Appointment  } from "@/types";
 
 export default function CalendarPage() {
@@ -15,6 +16,7 @@ export default function CalendarPage() {
   const { activeClinicId } = useAuth();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAISchedulerOpen, setIsAISchedulerOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<{ start: Date; end: Date } | null>(null);
 
@@ -75,6 +77,13 @@ export default function CalendarPage() {
         </div>
         <div className="flex gap-2">
           {/* Filters will go here later */}
+          <Button 
+            onClick={() => setIsAISchedulerOpen(true)} 
+            className="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 hover:from-blue-700 hover:via-indigo-700 hover:to-violet-700 text-white shadow-md font-semibold gap-2 border-0"
+          >
+            <Sparkles className="h-4 w-4 text-yellow-300 animate-pulse" /> 
+            {t('aiScheduler.triggerButton')}
+          </Button>
           <Button onClick={handleOpenCreate} className="bg-blue-600 hover:bg-blue-700">
             <Plus className="mr-2 h-4 w-4" /> {t('calendar.newEvent')}
           </Button>
@@ -99,6 +108,11 @@ export default function CalendarPage() {
             activeClinicId={activeClinicId}
             selectedAppointment={selectedAppointment}
             selectedSlot={selectedSlot}
+          />
+          <AISchedulerDialog
+            isOpen={isAISchedulerOpen}
+            onOpenChange={setIsAISchedulerOpen}
+            activeClinicId={activeClinicId}
           />
         </>
       )}
