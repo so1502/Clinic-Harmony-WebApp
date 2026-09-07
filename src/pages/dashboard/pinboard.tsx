@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format, differenceInYears } from "date-fns";
 import { de, enUS } from "date-fns/locale";
 import { 
   Plus, 
+  Pencil,
   Trash2, 
   Calendar as CalendarIcon, 
   Clock, 
@@ -13,7 +14,6 @@ import {
   Info,
   CalendarCheck2,
   Printer,
-  SlidersHorizontal,
   FileSpreadsheet,
   Tv,
   Play,
@@ -22,12 +22,24 @@ import {
   ChevronRight,
   Monitor,
   Utensils,
-  Zap
+  Zap,
+  CheckSquare,
+  RotateCcw
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import type { Appointment, Patient } from "@/types";
+
+export interface FixedRoutine {
+  id: string;
+  name: string;
+  startTime: string;
+  endTime: string;
+  color: string;
+  station?: string; // "all" | "Neuro I" | "Neuro II" | "Neuro III"
+  days?: number[]; // 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat, 0=Sun
+}
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,7 +64,7 @@ const generateTimeSlots = () => {
   const slots = [];
   let hour = 7;
   let minute = 30;
-  while (hour < 17 || (hour === 17 && minute === 0)) {
+  while (hour < 18 || (hour === 18 && minute === 0)) {
     const hStr = hour.toString().padStart(2, "0");
     const mStr = minute.toString().padStart(2, "0");
     slots.push(`${hStr}:${mStr}`);
@@ -107,9 +119,15 @@ export default function PinboardPage() {
 
   // State: selected date (defaults to today)
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  
-  // State: patient IDs displayed in the 3 columns
+  // State: patient IDs displayed in columns
   const [colPatientIds, setColPatientIds] = useState<(string | null)[]>([null, null, null]);
+  
+  // State: Station filter ('all' | 'Neuro I' | 'Neuro II' | 'Neuro III')
+  const [stationFilter, setStationFilter] = useState<string>("all");
+
+  // State: Multi-Select Mode for Bulk Deleting Appointments
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
+  const [selectedAptIds, setSelectedAptIds] = useState<string[]>([]);
 
   // State: temporary custom end times during active drag resizing for real-time visual feedback
   const [tempResizedApts, setTempResizedApts] = useState<Record<string, string>>({});
@@ -120,6 +138,15 @@ export default function PinboardPage() {
   const [newBlockName, setNewBlockName] = useState("");
   const [newBlockDuration, setNewBlockDuration] = useState(30);
   const [newBlockColor, setNewBlockColor] = useState("#3b82f6");
+
+  // State: Fixed routines creation/editing
+  const [isNewRoutineOpen, setIsNewRoutineOpen] = useState(false);
+  const [newRoutineName, setNewRoutineName] = useState("");
+  const [newRoutineStart, setNewRoutineStart] = useState("12:00");
+  const [newRoutineEnd, setNewRoutineEnd] = useState("13:00");
+  const [newRoutineStation, setNewRoutineStation] = useState<string>("all");
+  const [newRoutineDays, setNewRoutineDays] = useState<number[]>([1, 2, 3, 4, 5, 6, 0]);
+  const [newRoutineColor, setNewRoutineColor] = useState("#f97316");
 
   // State: Print / PDF Export Modal
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
@@ -133,62 +160,192 @@ export default function PinboardPage() {
   const [tvIntervalSeconds, setTvIntervalSeconds] = useState(10);
   const [isTvAutoPlay, setIsTvAutoPlay] = useState(true);
 
-  // State: Fixed Daily Routines (Meal times, rest breaks)
-  interface FixedRoutine {
-    id: string;
-    name: string;
-    startTime: string;
-    endTime: string;
-    color: string;
-  }
-  const [fixedRoutines, setFixedRoutines] = useState<FixedRoutine[]>([]);
-  const [isNewRoutineOpen, setIsNewRoutineOpen] = useState(false);
-  const [newRoutineName, setNewRoutineName] = useState("");
-  const [newRoutineStart, setNewRoutineStart] = useState("12:00");
-  const [newRoutineEnd, setNewRoutineEnd] = useState("13:00");
-  const [newRoutineColor, setNewRoutineColor] = useState("#f97316");
+  // Live clock state for real-time red indicator line & auto-scrolling
+  const [now, setNow] = useState<Date>(new Date());
+  const tvGridRef = useRef<HTMLDivElement>(null);
 
-  // Load fixed routines from localStorage
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 10000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const isToday = format(selectedDate, "yyyy-MM-dd") === format(now, "yyyy-MM-dd");
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+  // TV Mode Auto-Scroll to current time position
+  useEffect(() => {
+    if (isTvModeOpen && tvGridRef.current && isToday) {
+      const clampedNow = Math.max(GRID_START_MINUTES, Math.min(GRID_END_MINUTES, nowMinutes));
+      const nowPx = (clampedNow - GRID_START_MINUTES) * PRINT_MINUTE_HEIGHT * 1.15;
+      tvGridRef.current.scrollTo({
+        top: Math.max(0, nowPx - 140),
+        behavior: "smooth"
+      });
+    }
+  }, [isTvModeOpen, tvCurrentPage, isToday, nowMinutes]);
+
+  // Mutation to update patient medical alert directly from Stecktafel
+  const updateAlertMutation = useMutation({
+    mutationFn: async ({ id, medical_alert }: { id: string; medical_alert: string }) => {
+      const { error } = await supabase.from("patients").update({ medical_alert }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["patients", activeClinicId] });
+      toast.success("Warnhinweis aktualisiert.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Fehler beim Aktualisieren.");
+    }
+  });
+
+  // Helper: Sanitize & ensure routine has fallback station and days if missing
+  const sanitizeRoutine = (r: FixedRoutine): FixedRoutine => {
+    const nameLower = (r.name || "").toLowerCase();
+    const idLower = (r.id || "").toLowerCase();
+    
+    let station = r.station;
+    let days = r.days;
+
+    if (!station) {
+      if (idLower === "visite_n3" || nameLower.includes("neuro iii") || nameLower.includes("n iii")) {
+        station = "Neuro III";
+      } else if (idLower === "visite_n2" || nameLower.includes("neuro ii") || nameLower.includes("n ii")) {
+        station = "Neuro II";
+      } else if (idLower === "visite_n1" || nameLower.includes("neuro i") || nameLower.includes("n i")) {
+        station = "Neuro I";
+      } else {
+        station = "all";
+      }
+    }
+
+    if (!days || days.length === 0) {
+      if (idLower === "visite_n3" || nameLower.includes("neuro iii") || nameLower.includes("n iii")) {
+        days = [4]; // Thursday
+      } else if (idLower === "visite_n2" || nameLower.includes("neuro ii") || nameLower.includes("n ii")) {
+        days = [2]; // Tuesday
+      } else if (idLower === "visite_n1" || nameLower.includes("neuro i") || nameLower.includes("n i")) {
+        days = [1]; // Monday
+      } else if (nameLower.includes("besprechung n iii")) {
+        days = [3];
+      } else if (nameLower.includes("besprechung n ii")) {
+        days = [4];
+      } else if (nameLower.includes("besprechung n i")) {
+        days = [1];
+      } else {
+        days = [1, 2, 3, 4, 5, 6, 0];
+      }
+    }
+
+    return {
+      ...r,
+      station,
+      days
+    };
+  };
+
+  const defaultFixedRoutines: FixedRoutine[] = [
+    { id: "fruehstueck", name: "Frühstück (8-10h)", startTime: "08:00", endTime: "10:00", color: "#eab308", station: "all", days: [1, 2, 3, 4, 5, 6, 0] },
+    { id: "mittagessen", name: "Mittagessen (11:45-13:15)", startTime: "11:45", endTime: "13:15", color: "#f97316", station: "all", days: [1, 2, 3, 4, 5, 6, 0] },
+    { id: "visite_n1", name: "Visite Neuro I", startTime: "10:00", endTime: "10:30", color: "#a855f7", station: "Neuro I", days: [1] }, // Monday
+    { id: "visite_n2", name: "Visite Neuro II", startTime: "10:00", endTime: "10:30", color: "#a855f7", station: "Neuro II", days: [2] }, // Tuesday
+    { id: "visite_n3", name: "Visite Neuro III", startTime: "10:00", endTime: "10:30", color: "#a855f7", station: "Neuro III", days: [4] }, // Thursday
+    { id: "bespr_n1", name: "Besprechung N I", startTime: "12:30", endTime: "14:00", color: "#6366f1", station: "Neuro I", days: [1] }, // Monday
+    { id: "bespr_n3", name: "Besprechung N III", startTime: "12:30", endTime: "14:00", color: "#6366f1", station: "Neuro III", days: [3] }, // Wednesday
+    { id: "bespr_n2", name: "Besprechung N II", startTime: "12:30", endTime: "14:00", color: "#6366f1", station: "Neuro II", days: [4] }, // Thursday
+    { id: "abendessen", name: "Abendessen (16:30-17:30)", startTime: "16:30", endTime: "17:30", color: "#f97316", station: "all", days: [1, 2, 3, 4, 5, 6, 0] }
+  ];
+
+  const [fixedRoutines, setFixedRoutines] = useState<FixedRoutine[]>([]);
+  const [editingRoutine, setEditingRoutine] = useState<FixedRoutine | null>(null);
+
+  // Load fixed routines from localStorage & force-sanitize all routines
   useEffect(() => {
     if (!activeClinicId) return;
     const key = `harmony_fixed_routines_${activeClinicId}`;
     const saved = localStorage.getItem(key);
+    
     if (saved) {
-      setFixedRoutines(JSON.parse(saved));
+      try {
+        const parsed: FixedRoutine[] = JSON.parse(saved);
+        const sanitized = parsed.map(sanitizeRoutine);
+        setFixedRoutines(sanitized);
+        localStorage.setItem(key, JSON.stringify(sanitized));
+      } catch {
+        setFixedRoutines(defaultFixedRoutines);
+        localStorage.setItem(key, JSON.stringify(defaultFixedRoutines));
+      }
     } else {
-      const defaults: FixedRoutine[] = [
-        { id: "fruehstueck", name: "Frühstück", startTime: "08:00", endTime: "08:30", color: "#eab308" },
-        { id: "mittagessen", name: "Mittagessen", startTime: "12:00", endTime: "13:00", color: "#f97316" },
-        { id: "ruhepause", name: "Ruhepause", startTime: "13:00", endTime: "14:00", color: "#10b981" },
-        { id: "abendessen", name: "Abendessen", startTime: "17:30", endTime: "18:00", color: "#a855f7" }
-      ];
-      setFixedRoutines(defaults);
-      localStorage.setItem(key, JSON.stringify(defaults));
+      setFixedRoutines(defaultFixedRoutines);
+      localStorage.setItem(key, JSON.stringify(defaultFixedRoutines));
     }
   }, [activeClinicId]);
 
   const saveRoutines = (updated: FixedRoutine[]) => {
     if (!activeClinicId) return;
-    setFixedRoutines(updated);
-    localStorage.setItem(`harmony_fixed_routines_${activeClinicId}`, JSON.stringify(updated));
+    const sanitized = updated.map(sanitizeRoutine);
+    setFixedRoutines(sanitized);
+    localStorage.setItem(`harmony_fixed_routines_${activeClinicId}`, JSON.stringify(sanitized));
   };
 
-  const handleCreateRoutine = (e: React.FormEvent) => {
+  const handleResetRoutines = () => {
+    if (!activeClinicId) return;
+    saveRoutines(defaultFixedRoutines);
+    toast.success("Standard-Routinen wiederhergestellt!");
+  };
+
+  const openCreateRoutine = () => {
+    setEditingRoutine(null);
+    setNewRoutineName("");
+    setNewRoutineStart("12:00");
+    setNewRoutineEnd("13:00");
+    setNewRoutineStation("all");
+    setNewRoutineDays([1, 2, 3, 4, 5, 6, 0]);
+    setIsNewRoutineOpen(true);
+  };
+
+  const openEditRoutine = (routine: FixedRoutine) => {
+    setEditingRoutine(routine);
+    setNewRoutineName(routine.name);
+    setNewRoutineStart(routine.startTime);
+    setNewRoutineEnd(routine.endTime);
+    setNewRoutineStation(routine.station || "all");
+    setNewRoutineDays(routine.days || [1, 2, 3, 4, 5, 6, 0]);
+    setIsNewRoutineOpen(true);
+  };
+
+  const handleSaveRoutine = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newRoutineName.trim()) return;
 
-    const newRoutine: FixedRoutine = {
-      id: Math.random().toString(36).substring(2, 9),
-      name: newRoutineName.trim(),
-      startTime: newRoutineStart,
-      endTime: newRoutineEnd,
-      color: newRoutineColor
-    };
-
-    saveRoutines([...fixedRoutines, newRoutine]);
-    setNewRoutineName("");
-    setIsNewRoutineOpen(false);
-    toast.success("Routine hinzugefügt!");
+    if (editingRoutine) {
+      const updated = fixedRoutines.map(r => r.id === editingRoutine.id ? {
+        ...r,
+        name: newRoutineName.trim(),
+        startTime: newRoutineStart,
+        endTime: newRoutineEnd,
+        station: newRoutineStation,
+        days: newRoutineDays
+      } : r);
+      saveRoutines(updated);
+      setEditingRoutine(null);
+      setIsNewRoutineOpen(false);
+      toast.success("Routine aktualisiert!");
+    } else {
+      const newRoutine: FixedRoutine = {
+        id: Math.random().toString(36).substring(2, 9),
+        name: newRoutineName.trim(),
+        startTime: newRoutineStart,
+        endTime: newRoutineEnd,
+        color: newRoutineColor,
+        station: newRoutineStation,
+        days: newRoutineDays
+      };
+      saveRoutines([...fixedRoutines, newRoutine]);
+      setEditingRoutine(null);
+      setIsNewRoutineOpen(false);
+      toast.success("Routine hinzugefügt!");
+    }
   };
 
   const handleDeleteRoutine = (id: string) => {
@@ -205,16 +362,43 @@ export default function PinboardPage() {
       return;
     }
 
+    const currentDayOfWeek = selectedDate.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+
     const newAptsToInsert: any[] = [];
     let countAdded = 0;
 
     for (const pId of activePatients) {
-      for (const routine of fixedRoutines) {
+      const patient = getPatientDetails(pId);
+      const patientStation = patient?.station || "Neuro I";
+
+      for (const rawRoutine of fixedRoutines) {
+        const routine = sanitizeRoutine(rawRoutine);
+
+        // 1. Check day of week match
+        if (routine.days && routine.days.length > 0 && !routine.days.includes(currentDayOfWeek)) {
+          continue;
+        }
+
+        // 2. Check station match
+        if (routine.station && routine.station !== "all" && routine.station !== patientStation) {
+          continue;
+        }
+
         const startDateTime = new Date(`${dateStr}T${routine.startTime}:00`);
         const endDateTime = new Date(`${dateStr}T${routine.endTime}:00`);
 
-        const hasConflict = checkLocalPatientOverlap(pId, startDateTime, endDateTime);
-        if (!hasConflict) {
+        const targetStart = startDateTime.getTime();
+        const targetEnd = endDateTime.getTime();
+
+        const hasDbConflict = checkLocalPatientOverlap(pId, startDateTime, endDateTime);
+        const hasStagedConflict = newAptsToInsert.some(staged => {
+          if (staged.patient_id !== pId) return false;
+          const stagedStart = new Date(staged.start_time).getTime();
+          const stagedEnd = new Date(staged.end_time).getTime();
+          return targetStart < stagedEnd && targetEnd > stagedStart;
+        });
+
+        if (!hasDbConflict && !hasStagedConflict) {
           newAptsToInsert.push({
             clinic_id: activeClinicId,
             patient_id: pId,
@@ -231,7 +415,7 @@ export default function PinboardPage() {
     }
 
     if (newAptsToInsert.length === 0) {
-      toast.info("Keine neuen Routinen eingetragen (bereits belegt oder vorhanden).");
+      toast.info("Keine passenden Routinen für diese Station / diesen Wochentag ausstehend.");
       return;
     }
 
@@ -305,19 +489,16 @@ export default function PinboardPage() {
     enabled: !!activeClinicId,
   });
 
-  // Auto-initialize columns with the first 3 patients
+  // Auto-initialize columns based on station filter
   useEffect(() => {
     if (patients && patients.length > 0) {
-      setColPatientIds(prev => {
-        if (prev.some(id => id !== null)) return prev;
-        return [
-          patients[0]?.id || null,
-          patients[1]?.id || null,
-          patients[2]?.id || null
-        ];
-      });
+      const filtered = stationFilter === "all" 
+        ? patients 
+        : patients.filter(p => p.station === stationFilter);
+      
+      setColPatientIds(filtered.map(p => p.id));
     }
-  }, [patients]);
+  }, [patients, stationFilter]);
 
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
@@ -397,6 +578,25 @@ export default function PinboardPage() {
     },
     onError: (err: any) => {
       toast.error(err.message || "Error deleting appointment.");
+    }
+  });
+
+  // Mutation: Delete multiple appointments
+  const deleteMultipleAppointmentsMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      if (!ids || ids.length === 0) return;
+      const { error } = await supabase.from("appointments").delete().in("id", ids);
+      if (error) throw error;
+    },
+    onSuccess: (_, ids) => {
+      queryClient.invalidateQueries({ queryKey: ["appointments-day"] });
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      setSelectedAptIds([]);
+      setIsMultiSelectMode(false);
+      toast.success(`${ids.length} Termine erfolgreich gelöscht!`);
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Fehler beim Löschen der Termine.");
     }
   });
 
@@ -938,30 +1138,49 @@ export default function PinboardPage() {
                 <Utensils className="h-4 w-4 text-amber-500" />
                 {t('pinboard.fixedRoutinesTitle') || "Feste Tages-Routinen"}
               </h3>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => setIsNewRoutineOpen(!isNewRoutineOpen)}
-                className="h-6 w-6 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-full"
-              >
-                {isNewRoutineOpen ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={handleResetRoutines}
+                  title="Standard-Routinen wiederherstellen"
+                  className="h-6 w-6 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-full"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={openCreateRoutine}
+                  title="Neue Routine hinzufügen"
+                  className="h-6 w-6 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-full"
+                >
+                  {isNewRoutineOpen && !editingRoutine ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
+                </Button>
+              </div>
             </div>
 
             <p className="text-[11px] text-slate-500 leading-tight">
               {t('pinboard.fixedRoutinesSubtitle') || "Feste Essens- und Ruhezeiten automatisch eintragen."}
             </p>
 
-            {/* Inline creation form */}
+            {/* Inline creation/editing form */}
             {isNewRoutineOpen && (
-              <form onSubmit={handleCreateRoutine} className="bg-amber-50/50 p-2.5 rounded-lg border border-amber-200 space-y-2.5 animate-in fade-in duration-200">
+              <form onSubmit={handleSaveRoutine} className="bg-amber-50/50 p-2.5 rounded-lg border border-amber-200 space-y-2.5 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between font-semibold text-xs text-amber-900 border-b border-amber-200/60 pb-1">
+                  <span>{editingRoutine ? "Routine bearbeiten" : "Neue Routine erstellen"}</span>
+                  <button type="button" onClick={() => setIsNewRoutineOpen(false)} className="text-slate-400 hover:text-slate-600 text-xs font-normal">
+                    Schließen
+                  </button>
+                </div>
+                
                 <div className="space-y-1">
                   <Label htmlFor="routineName" className="text-xs">{t('pinboard.routineName') || "Routine Name"}</Label>
                   <Input 
                     id="routineName" 
                     value={newRoutineName} 
                     onChange={e => setNewRoutineName(e.target.value)} 
-                    placeholder="z.B. Mittagessen"
+                    placeholder="z.B. Visite Neuro I"
                     className="h-7 text-xs bg-white"
                     autoFocus
                   />
@@ -991,41 +1210,126 @@ export default function PinboardPage() {
                   </div>
                 </div>
 
+                <div className="space-y-1">
+                  <Label htmlFor="routineStation" className="text-xs">Ziel-Station</Label>
+                  <select
+                    id="routineStation"
+                    value={newRoutineStation}
+                    onChange={e => setNewRoutineStation(e.target.value)}
+                    className="h-7 w-full text-xs bg-white border border-slate-200 rounded-md px-2 font-medium"
+                  >
+                    <option value="all">Alle Stationen</option>
+                    <option value="Neuro I">Station Neuro I</option>
+                    <option value="Neuro II">Station Neuro II</option>
+                    <option value="Neuro III">Station Neuro III</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <Label className="text-xs">Wochentage</Label>
+                  <div className="flex gap-1 flex-wrap">
+                    {[
+                      { num: 1, label: "Mo" },
+                      { num: 2, label: "Di" },
+                      { num: 3, label: "Mi" },
+                      { num: 4, label: "Do" },
+                      { num: 5, label: "Fr" },
+                      { num: 6, label: "Sa" },
+                      { num: 0, label: "So" },
+                    ].map(d => {
+                      const isSelected = newRoutineDays.includes(d.num);
+                      return (
+                        <button
+                          key={d.num}
+                          type="button"
+                          onClick={() => {
+                            if (isSelected) {
+                              setNewRoutineDays(newRoutineDays.filter(day => day !== d.num));
+                            } else {
+                              setNewRoutineDays([...newRoutineDays, d.num]);
+                            }
+                          }}
+                          className={`h-6 w-6 text-[10px] font-bold rounded ${
+                            isSelected ? "bg-amber-600 text-white" : "bg-white text-slate-600 border border-slate-200"
+                          }`}
+                        >
+                          {d.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <div className="flex gap-2 justify-end pt-1">
-                  <Button type="button" variant="ghost" size="sm" onClick={() => setIsNewRoutineOpen(false)} className="h-6 text-xs">
+                  <Button type="button" variant="ghost" size="sm" onClick={() => { setIsNewRoutineOpen(false); setEditingRoutine(null); }} className="h-6 text-xs">
                     {t('pinboard.cancel')}
                   </Button>
-                  <Button type="submit" size="sm" className="h-6 text-xs bg-amber-600 hover:bg-amber-700 text-white">
-                    {t('pinboard.save')}
+                  <Button type="submit" size="sm" className="h-6 text-xs bg-amber-600 hover:bg-amber-700 text-white font-medium">
+                    {editingRoutine ? "Speichern" : t('pinboard.save')}
                   </Button>
                 </div>
               </form>
             )}
 
             {/* List of active fixed routine rules */}
-            <div className="space-y-1.5 max-h-[180px] overflow-y-auto pr-1">
-              {fixedRoutines.map(routine => (
-                <div
-                  key={routine.id}
-                  className="flex items-center justify-between p-2 rounded-lg border border-slate-100 bg-slate-50/50 hover:border-slate-200 transition-all group"
-                  style={{ borderLeft: `4px solid ${routine.color}` }}
-                >
-                  <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-slate-800">{routine.name}</span>
-                    <span className="text-[10px] text-slate-500 font-medium flex items-center gap-1 mt-0.5">
-                      <Clock className="w-3 h-3 text-slate-400" /> {routine.startTime} - {routine.endTime}
-                    </span>
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    onClick={() => handleDeleteRoutine(routine.id)}
-                    className="h-6 w-6 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md transition-opacity"
+            <div className="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
+              {fixedRoutines.map(routine => {
+                const dayLabels = routine.days && routine.days.length === 7
+                  ? "Täglich"
+                  : routine.days?.map(d => {
+                      if (d === 1) return "Mo";
+                      if (d === 2) return "Di";
+                      if (d === 3) return "Mi";
+                      if (d === 4) return "Do";
+                      if (d === 5) return "Fr";
+                      if (d === 6) return "Sa";
+                      if (d === 0) return "So";
+                      return "";
+                    }).filter(Boolean).join(", ") || "Täglich";
+
+                return (
+                  <div
+                    key={routine.id}
+                    className="flex items-center justify-between p-2 rounded-lg border border-slate-100 bg-slate-50/50 hover:border-slate-200 transition-all group"
+                    style={{ borderLeft: `4px solid ${routine.color}` }}
                   >
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              ))}
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <span className="text-xs font-semibold text-slate-800 truncate">{routine.name}</span>
+                      <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-medium flex-wrap">
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-slate-400" /> {routine.startTime} - {routine.endTime}
+                        </span>
+                        <span className="bg-slate-200 text-slate-700 font-semibold px-1 rounded text-[9px]">
+                          {routine.station === "all" || !routine.station ? "Alle" : routine.station}
+                        </span>
+                        <span className="bg-amber-100 text-amber-800 font-semibold px-1 rounded text-[9px]">
+                          {dayLabels}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => openEditRoutine(routine)}
+                        title="Bearbeiten"
+                        className="h-6 w-6 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-md"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleDeleteRoutine(routine.id)}
+                        title="Löschen"
+                        className="h-6 w-6 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-md"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Auto-Apply Button */}
@@ -1040,108 +1344,282 @@ export default function PinboardPage() {
         </div>
 
         {/* Pinboard Grid (Right Side) */}
+        {/* Pinboard Grid (Right Side) */}
         <div className="lg:col-span-3 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-          {/* Patients Header row */}
-          <div className="grid grid-cols-12 border-b border-slate-200 bg-slate-50/70 py-3">
-            {/* Hour marker column header */}
-            <div className="col-span-2 sm:col-span-1 text-center font-bold text-xs uppercase tracking-wider text-slate-400 self-center">
-              {t('pinboard.time')}
-            </div>
-
-            {/* 3 Patient Columns Headers */}
-            {colPatientIds.map((patientId, colIdx) => {
-              const patient = getPatientDetails(patientId);
-              const workload = getPatientWorkload(patientId);
-              const age = patient?.date_of_birth ? differenceInYears(new Date(dateStr), new Date(patient.date_of_birth)) : null;
-
-              return (
-                <div key={colIdx} className="col-span-3 sm:col-span-3 px-3 border-l border-slate-200 flex flex-col gap-2">
-                  <Select 
-                    value={patientId || "none"}
-                    onValueChange={(val) => handleSelectColumnPatient(colIdx, val)}
-                  >
-                    <SelectTrigger className="h-8 text-xs font-semibold bg-white border-slate-200 focus:ring-0">
-                      <SelectValue>
-                        {patient?.full_name || t('pinboard.selectPatient')}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none" className="text-slate-400 font-normal italic">{t('pinboard.selectPatient')}</SelectItem>
-                      {patients?.map(p => (
-                        <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  {/* Patient stats */}
-                  {patient ? (
-                    <div className="flex flex-col gap-1 px-1">
-                      <div className="flex justify-between items-center text-[10px] text-slate-400">
-                        <span>{age !== null ? `${age} Jahre` : ""}</span>
-                        <span className="font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded-full shrink-0">{workload.text}</span>
-                      </div>
-                      
-                      {/* Workload Progress Bar */}
-                      <div className="w-full bg-slate-200 rounded-full h-1 overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full transition-all ${
-                            workload.minutes > 360 ? "bg-red-500" : workload.minutes > 240 ? "bg-amber-500" : "bg-blue-600"
-                          }`}
-                          style={{ width: `${Math.min(100, (workload.minutes / 360) * 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-[10px] text-slate-400 italic px-1">
-                      {t('pinboard.noPatients')}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Grid body with appointments absolute positioning */}
-          <div className="grid grid-cols-12 relative overflow-y-auto" style={{ height: `${GRID_TOTAL_HEIGHT}px` }}>
-            {isAppointmentsLoading || isPatientsLoading ? (
-              <div className="absolute inset-0 bg-white/70 z-50 flex items-center justify-center">
-                <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
-              </div>
-            ) : null}
-
-            {/* Time labels background lines */}
-            <div className="col-span-2 sm:col-span-1 border-r border-slate-100 bg-slate-50/20">
-              {TIME_SLOTS.map((time, idx) => (
-                <div 
-                  key={idx} 
-                  className="flex items-center justify-center border-b border-slate-100 text-[11px] font-semibold text-slate-500 select-none"
-                  style={{ height: `${ROW_HEIGHT}px` }}
+          {/* Station Filter & Horizontal Navigation Toolbar */}
+          <div className="flex flex-wrap items-center justify-between gap-2 p-3 border-b border-slate-200 bg-slate-50/80">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-xs font-semibold text-slate-500 mr-1">Station:</span>
+              {[
+                { id: "all", label: `Alle (${patients?.length || 0})` },
+                { id: "Neuro I", label: `Neuro I (${patients?.filter(p => p.station === "Neuro I").length || 0})` },
+                { id: "Neuro II", label: `Neuro II (${patients?.filter(p => p.station === "Neuro II").length || 0})` },
+                { id: "Neuro III", label: `Neuro III (${patients?.filter(p => p.station === "Neuro III").length || 0})` },
+              ].map(st => (
+                <button
+                  key={st.id}
+                  onClick={() => setStationFilter(st.id)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                    stationFilter === st.id
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
+                  }`}
                 >
-                  {time}
-                </div>
+                  {st.label}
+                </button>
               ))}
             </div>
 
-            {/* Grid Columns for Drop Zone */}
-            {colPatientIds.map((patientId, colIdx) => {
-              const patientAppointments = appointments?.filter(apt => apt.patient_id === patientId) || [];
-
-              return (
-                <div 
-                  key={colIdx} 
-                  className="col-span-3 sm:col-span-3 relative border-l border-slate-100"
-                  style={{ height: `${GRID_TOTAL_HEIGHT}px` }}
+            {/* Scroll navigation arrows & Batch Delete Actions */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {!isMultiSelectMode ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsMultiSelectMode(true)}
+                  className="h-7 text-xs gap-1.5 border-red-200 bg-red-50 text-red-700 hover:bg-red-100 font-semibold shadow-xs"
                 >
-                  {/* Grid cells backdrop */}
+                  <Trash2 className="h-3.5 w-3.5" /> Mehrfach löschen
+                </Button>
+              ) : (
+                <div className="flex items-center gap-1.5 bg-red-50 p-1 rounded-lg border border-red-200 animate-in fade-in duration-200">
+                  <span className="text-xs font-bold text-red-800 px-1">
+                    {selectedAptIds.length} gewählt
+                  </span>
+                  
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      if (!appointments) return;
+                      if (selectedAptIds.length === appointments.length) {
+                        setSelectedAptIds([]);
+                      } else {
+                        setSelectedAptIds(appointments.map(a => a.id));
+                      }
+                    }}
+                    className="h-6 text-[11px] px-2 bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
+                  >
+                    <CheckSquare className="h-3 w-3 mr-1" />
+                    {appointments && selectedAptIds.length === appointments.length ? "Keine" : "Alle wählen"}
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    disabled={selectedAptIds.length === 0}
+                    onClick={() => {
+                      if (confirm(`Möchten Sie wirklich die ${selectedAptIds.length} ausgewählten Termine löschen?`)) {
+                        deleteMultipleAppointmentsMutation.mutate(selectedAptIds);
+                      }
+                    }}
+                    className="h-6 text-[11px] px-2 bg-red-600 hover:bg-red-700 text-white font-semibold shadow-xs"
+                  >
+                    <Trash2 className="h-3 w-3 mr-1" />
+                    Löschen ({selectedAptIds.length})
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      if (!appointments || appointments.length === 0) {
+                        toast.info("Keine Termine vorhanden.");
+                        return;
+                      }
+                      if (confirm(`Möchten Sie wirklich ALLE ${appointments.length} Termine dieses Tages löschen?`)) {
+                        deleteMultipleAppointmentsMutation.mutate(appointments.map(a => a.id));
+                      }
+                    }}
+                    className="h-6 text-[11px] px-2 text-red-700 hover:bg-red-100"
+                  >
+                    Alle Tagestermine löschen
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setIsMultiSelectMode(false);
+                      setSelectedAptIds([]);
+                    }}
+                    className="h-6 w-6 p-0 text-slate-500 hover:text-slate-800"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              )}
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1 border-slate-200 bg-white hover:bg-slate-100 ml-1"
+                onClick={() => {
+                  const el = document.getElementById("pinboard-grid-scroll-container");
+                  if (el) el.scrollBy({ left: -300, behavior: "smooth" });
+                }}
+              >
+                <ChevronLeft className="h-4 w-4" /> Scroll Left
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1 border-slate-200 bg-white hover:bg-slate-100"
+                onClick={() => {
+                  const el = document.getElementById("pinboard-grid-scroll-container");
+                  if (el) el.scrollBy({ left: 300, behavior: "smooth" });
+                }}
+              >
+                Scroll Right <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Unified Horizontal & Vertical Scroll Container */}
+          <div id="pinboard-grid-scroll-container" className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-150px)] min-h-[600px] relative">
+            <div className="min-w-max flex flex-col">
+              {/* Patients Header Row */}
+              <div className="flex border-b border-slate-200 bg-slate-50/70 sticky top-0 z-30">
+                {/* Hour marker column header */}
+                <div className="w-16 shrink-0 text-center font-bold text-xs uppercase tracking-wider text-slate-400 py-3 sticky left-0 z-40 bg-slate-100 border-r border-slate-200 self-stretch flex items-center justify-center">
+                  {t('pinboard.time')}
+                </div>
+
+                {/* Patient Columns Headers */}
+                {colPatientIds.map((patientId, colIdx) => {
+                  const patient = getPatientDetails(patientId);
+                  const workload = getPatientWorkload(patientId);
+                  const age = patient?.date_of_birth ? differenceInYears(new Date(dateStr), new Date(patient.date_of_birth)) : null;
+                  const isAlertAZ = patient?.medical_alert === 'schlechter_az_infektion' || patient?.medical_alert === 'both';
+                  const isAlertPflege = patient?.medical_alert === 'bei_pflege_melden' || patient?.medical_alert === 'both';
+
+                  return (
+                    <div key={colIdx} className="w-[230px] shrink-0 p-2 px-3 border-r border-slate-200 flex flex-col gap-1.5 bg-slate-50/90">
+                      <Select 
+                        value={patientId || "none"}
+                        onValueChange={(val) => handleSelectColumnPatient(colIdx, val)}
+                      >
+                        <SelectTrigger className="h-7 text-xs font-semibold bg-white border-slate-200 focus:ring-0 truncate">
+                          <SelectValue>
+                            {patient?.full_name || t('pinboard.selectPatient')}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none" className="text-slate-400 font-normal italic">{t('pinboard.selectPatient')}</SelectItem>
+                          {patients?.map(p => (
+                            <SelectItem key={p.id} value={p.id}>{p.full_name} ({p.station || "Neuro I"})</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      {/* Patient badges and stats */}
+                      {patient ? (
+                        <div className="flex flex-col gap-1">
+                          {/* Station & Alert Badges */}
+                          <div className="flex items-center justify-between gap-1 flex-wrap">
+                            <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">
+                              {patient.station || "Neuro I"}
+                            </span>
+                            <select
+                              value={patient.medical_alert || "none"}
+                              onChange={(e) => updateAlertMutation.mutate({ id: patient.id, medical_alert: e.target.value })}
+                              className={`text-[10px] font-bold px-1 py-0.5 rounded border cursor-pointer transition-colors focus:ring-1 focus:ring-indigo-500 ${
+                                patient.medical_alert === 'both'
+                                  ? 'bg-red-100 text-red-900 border-red-300'
+                                  : patient.medical_alert === 'schlechter_az_infektion'
+                                  ? 'bg-red-100 text-red-800 border-red-300'
+                                  : patient.medical_alert === 'bei_pflege_melden'
+                                  ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                  : 'bg-white text-slate-400 border-slate-200 font-normal'
+                              }`}
+                              title={t('patients.alerts.updated') || "Warnhinweis ändern"}
+                            >
+                              <option value="none">{t('patients.alerts.noneShort') || "Kein Alert"}</option>
+                              <option value="bei_pflege_melden">{t('patients.alerts.beiPflegeMelden') || "❗ Bei Pflege melden"}</option>
+                              <option value="schlechter_az_infektion">{t('patients.alerts.schlechterAz') || "🔺 Schlechter AZ"}</option>
+                              <option value="both">{t('patients.alerts.both') || "🔺+❗ Beide Alerts"}</option>
+                            </select>
+                          </div>
+
+                          <div className="flex justify-between items-center text-[10px] text-slate-400 mt-0.5">
+                            <span>{age !== null ? `${age} J.` : ""}</span>
+                            <span className="font-semibold text-slate-700 bg-slate-200 px-1.5 py-0.5 rounded-full shrink-0">{workload.text}</span>
+                          </div>
+                          
+                          {/* Workload Progress Bar */}
+                          <div className="w-full bg-slate-200 rounded-full h-1 overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full transition-all ${
+                                workload.minutes > 360 ? "bg-red-500" : workload.minutes > 240 ? "bg-amber-500" : "bg-blue-600"
+                              }`}
+                              style={{ width: `${Math.min(100, (workload.minutes / 360) * 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-[10px] text-slate-400 italic px-1">
+                          {t('pinboard.noPatients')}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Grid Body */}
+              <div className="flex relative" style={{ height: `${GRID_TOTAL_HEIGHT}px` }}>
+                {isAppointmentsLoading || isPatientsLoading ? (
+                  <div className="absolute inset-0 bg-white/70 z-50 flex items-center justify-center">
+                    <Loader2 className="w-10 h-10 animate-spin text-blue-500" />
+                  </div>
+                ) : null}
+
+                {/* Main Grid Red Current Time Line Indicator */}
+                {isToday && nowMinutes >= GRID_START_MINUTES && nowMinutes <= GRID_END_MINUTES && (
+                  <div 
+                    className="absolute left-0 right-0 z-30 pointer-events-none flex items-center"
+                    style={{ top: `${(nowMinutes - GRID_START_MINUTES) * MINUTE_HEIGHT}px` }}
+                  >
+                    <div className="bg-red-600 text-white font-bold text-[10px] px-1.5 py-0.5 rounded-r-md shadow-md flex items-center gap-1 z-40">
+                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping shrink-0" />
+                      {format(now, "HH:mm")}
+                    </div>
+                    <div className="flex-1 h-[2px] bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+                  </div>
+                )}
+
+                {/* Sticky Time Labels Column */}
+                <div className="w-16 shrink-0 border-r border-slate-200 bg-slate-50 sticky left-0 z-20">
                   {TIME_SLOTS.map((time, idx) => (
                     <div 
-                      key={idx}
-                      onDragOver={e => e.preventDefault()}
-                      onDrop={(e) => handleDropOnCell(e, patientId, time)}
-                      className="border-b border-slate-100 hover:bg-blue-50/20 transition-colors"
+                      key={idx} 
+                      className="flex items-center justify-center border-b border-slate-100 text-[11px] font-semibold text-slate-500 select-none"
                       style={{ height: `${ROW_HEIGHT}px` }}
-                    />
+                    >
+                      {time}
+                    </div>
                   ))}
+                </div>
+
+                {/* Patient Grid Columns */}
+                {colPatientIds.map((patientId, colIdx) => {
+                  const patientAppointments = appointments?.filter(apt => apt.patient_id === patientId) || [];
+
+                  return (
+                    <div 
+                      key={colIdx} 
+                      className="w-[230px] shrink-0 relative border-r border-slate-200"
+                      style={{ height: `${GRID_TOTAL_HEIGHT}px` }}
+                    >
+                      {/* Grid cells backdrop */}
+                      {TIME_SLOTS.map((time, idx) => (
+                        <div 
+                          key={idx}
+                          onDragOver={e => e.preventDefault()}
+                          onDrop={(e) => handleDropOnCell(e, patientId, time)}
+                          className="border-b border-slate-100 hover:bg-blue-50/20 transition-colors"
+                          style={{ height: `${ROW_HEIGHT}px` }}
+                        />
+                      ))}
 
                   {/* Absolute positioned scheduled cards */}
                   {patientId && patientAppointments.map(apt => {
@@ -1162,21 +1640,46 @@ export default function PinboardPage() {
                     const roomName = apt.rooms?.name || null;
                     const durationMins = Math.round((new Date(currentEndTime).getTime() - new Date(apt.start_time).getTime()) / 60000);
 
+                    const isSelected = selectedAptIds.includes(apt.id);
+
                     return (
                       <div
                         key={apt.id}
-                        draggable
-                        onDragStart={(e) => handleDragStartExisting(e, apt)}
-                        className="absolute left-1.5 right-1.5 rounded-xl shadow-md border hover:shadow-xl hover:scale-[1.01] hover:z-20 transition-all cursor-grab active:cursor-grabbing p-1.5 px-2 overflow-hidden flex flex-col justify-start group"
+                        draggable={!isMultiSelectMode}
+                        onDragStart={(e) => !isMultiSelectMode && handleDragStartExisting(e, apt)}
+                        onClick={(e) => {
+                          if (isMultiSelectMode) {
+                            e.stopPropagation();
+                            setSelectedAptIds(prev =>
+                              prev.includes(apt.id)
+                                ? prev.filter(id => id !== apt.id)
+                                : [...prev, apt.id]
+                            );
+                          }
+                        }}
+                        className={`absolute left-1.5 right-1.5 rounded-xl shadow-md border hover:shadow-xl hover:scale-[1.01] hover:z-20 transition-all p-1.5 px-2 overflow-hidden flex flex-col justify-start group ${
+                          isMultiSelectMode ? "cursor-pointer" : "cursor-grab active:cursor-grabbing"
+                        } ${isSelected ? "ring-2 ring-red-500 ring-offset-1 shadow-lg scale-[1.02] z-30" : ""}`}
                         style={{
                           top: `${top}px`,
                           height: `${height}px`,
-                          backgroundColor: isStandardBlock ? (blockColor + "15") : cardColor,
-                          borderLeft: `5px solid ${isStandardBlock ? blockColor : cardColor}`,
-                          color: isStandardBlock ? "#1e293b" : cardTextColor,
-                          borderColor: isStandardBlock ? (blockColor + "30") : "transparent"
+                          backgroundColor: isSelected ? "#fee2e2" : (isStandardBlock ? (blockColor + "15") : cardColor),
+                          borderLeft: `5px solid ${isSelected ? "#ef4444" : (isStandardBlock ? blockColor : cardColor)}`,
+                          color: isSelected ? "#991b1b" : (isStandardBlock ? "#1e293b" : cardTextColor),
+                          borderColor: isSelected ? "#ef4444" : (isStandardBlock ? (blockColor + "30") : "transparent")
                         }}
                       >
+                        {isMultiSelectMode && (
+                          <div className="absolute top-1 right-1 bg-white rounded-full p-0.5 shadow border border-red-300 z-30">
+                            {isSelected ? (
+                              <div className="w-4 h-4 bg-red-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold">
+                                ✓
+                              </div>
+                            ) : (
+                              <div className="w-4 h-4 rounded-full border-2 border-slate-300 bg-white" />
+                            )}
+                          </div>
+                        )}
                         {height < 40 ? (
                           /* Compact layout for short duration appointments (15 min) */
                           <div className="flex flex-col justify-center h-full px-0.5">
@@ -1247,6 +1750,8 @@ export default function PinboardPage() {
           </div>
         </div>
       </div>
+    </div>
+  </div>
 
       {/* Print / PDF Export Settings Modal */}
       <Dialog open={isPrintModalOpen} onOpenChange={setIsPrintModalOpen}>
@@ -1663,32 +2168,47 @@ export default function PinboardPage() {
               </div>
 
               {/* TV Grid Area */}
-              <div className="flex-1 relative overflow-hidden">
-                <div 
-                  className="grid absolute inset-0"
-                  style={{ gridTemplateColumns: `80px repeat(${patientChunks[tvCurrentPage].length}, 1fr)` }}
-                >
-                  <div className="border-r border-slate-800/80 bg-slate-950/40 flex flex-col">
-                    {TIME_SLOTS.map((time, idx) => (
-                      <div key={idx} className="border-b border-slate-800/50 text-xs font-semibold text-slate-400 text-center flex items-center justify-center" style={{ height: `${PRINT_ROW_HEIGHT * 1.15}px` }}>
-                        {time}
+              <div ref={tvGridRef} className="flex-1 relative overflow-y-auto custom-scrollbar">
+                <div className="relative min-w-full" style={{ height: `${TIME_SLOTS.length * PRINT_ROW_HEIGHT * 1.15}px` }}>
+                  {/* TV Live Red Time Line Indicator */}
+                  {isToday && nowMinutes >= GRID_START_MINUTES && nowMinutes <= GRID_END_MINUTES && (
+                    <div 
+                      className="absolute left-0 right-0 z-30 pointer-events-none flex items-center"
+                      style={{ top: `${(nowMinutes - GRID_START_MINUTES) * PRINT_MINUTE_HEIGHT * 1.15}px` }}
+                    >
+                      <div className="bg-red-600 text-white font-bold text-[10px] px-2 py-0.5 rounded-r-md shadow-lg flex items-center gap-1.5 z-40">
+                        <span className="w-2 h-2 rounded-full bg-white animate-ping shrink-0" />
+                        {format(now, "HH:mm")}
+                      </div>
+                      <div className="flex-1 h-[2px] bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.9)]" />
+                    </div>
+                  )}
+
+                  <div 
+                    className="grid absolute inset-0"
+                    style={{ gridTemplateColumns: `80px repeat(${patientChunks[tvCurrentPage].length}, 1fr)` }}
+                  >
+                    <div className="border-r border-slate-800/80 bg-slate-950/40 flex flex-col">
+                      {TIME_SLOTS.map((time, idx) => (
+                        <div key={idx} className="border-b border-slate-800/50 text-xs font-semibold text-slate-400 text-center flex items-center justify-center" style={{ height: `${PRINT_ROW_HEIGHT * 1.15}px` }}>
+                          {time}
+                        </div>
+                      ))}
+                    </div>
+                    {patientChunks[tvCurrentPage].map((patient) => (
+                      <div key={patient.id} className="border-r border-slate-800/60 flex flex-col">
+                        {TIME_SLOTS.map((_, idx) => (
+                          <div key={idx} className="border-b border-slate-800/30" style={{ height: `${PRINT_ROW_HEIGHT * 1.15}px` }} />
+                        ))}
                       </div>
                     ))}
                   </div>
-                  {patientChunks[tvCurrentPage].map((patient) => (
-                    <div key={patient.id} className="border-r border-slate-800/60 flex flex-col">
-                      {TIME_SLOTS.map((_, idx) => (
-                        <div key={idx} className="border-b border-slate-800/30" style={{ height: `${PRINT_ROW_HEIGHT * 1.15}px` }} />
-                      ))}
-                    </div>
-                  ))}
-                </div>
 
-                {/* TV Cards */}
-                <div 
-                  className="grid absolute inset-0 pointer-events-none"
-                  style={{ gridTemplateColumns: `80px repeat(${patientChunks[tvCurrentPage].length}, 1fr)` }}
-                >
+                  {/* TV Cards */}
+                  <div 
+                    className="grid absolute inset-0 pointer-events-none"
+                    style={{ gridTemplateColumns: `80px repeat(${patientChunks[tvCurrentPage].length}, 1fr)` }}
+                  >
                   <div />
                   {patientChunks[tvCurrentPage].map((patient) => {
                     const patientApts = appointments?.filter(a => a.patient_id === patient.id) || [];
@@ -1705,15 +2225,23 @@ export default function PinboardPage() {
                           const matchedBlock = isStandardBlock ? standardBlocks.find(b => b.name.toLowerCase() === titleName.toLowerCase()) : null;
                           const blockColor = matchedBlock ? matchedBlock.color : "#38bdf8";
 
+                          const isAptPast = isToday && new Date(apt.end_time).getTime() < now.getTime();
+
                           return (
                             <div
                               key={apt.id}
-                              className="absolute left-1.5 right-1.5 rounded-xl p-2 border text-xs overflow-hidden flex flex-col justify-between shadow-lg backdrop-blur-sm"
+                              className={`absolute left-1.5 right-1.5 rounded-xl p-2 border text-xs overflow-hidden flex flex-col justify-between shadow-lg backdrop-blur-sm transition-all duration-300 ${
+                                isAptPast ? "opacity-35 grayscale hover:opacity-100" : "opacity-100"
+                              }`}
                               style={{
                                 top: `${tvTop}px`,
                                 height: `${tvHeight}px`,
-                                backgroundColor: isStandardBlock ? (blockColor + "30") : (apt.therapy_types?.color ? (apt.therapy_types.color + "40") : "#334155"),
-                                borderColor: isStandardBlock ? blockColor : (apt.therapy_types?.color || "#64748b"),
+                                backgroundColor: isAptPast 
+                                  ? "#1e293b"
+                                  : isStandardBlock ? (blockColor + "30") : (apt.therapy_types?.color ? (apt.therapy_types.color + "40") : "#334155"),
+                                borderColor: isAptPast
+                                  ? "#475569"
+                                  : isStandardBlock ? blockColor : (apt.therapy_types?.color || "#64748b"),
                                 borderLeftWidth: "6px",
                                 color: "#ffffff"
                               }}
@@ -1762,6 +2290,7 @@ export default function PinboardPage() {
                       </div>
                     );
                   })}
+                  </div>
                 </div>
               </div>
             </div>

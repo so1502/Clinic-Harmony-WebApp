@@ -342,14 +342,17 @@ export function CalendarView({ appointments, activeClinicId, onSelectEvent, onSe
               <SelectValue>
                 {selectedTherapistId === "all"
                   ? (t('calendar.allTherapists') || t('pinboard.allTherapists') || 'Alle Therapeuten')
-                  : (therapists?.find((tItem: any) => String(tItem.id) === String(selectedTherapistId))?.profiles?.full_name || "Therapeut")}
+                  : (() => {
+                      const selected = therapists?.find((tItem: any) => String(tItem.id) === String(selectedTherapistId));
+                      return selected?.profiles?.full_name || selected?.bio || selected?.specialization || "Therapeut";
+                    })()}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t('calendar.allTherapists') || t('pinboard.allTherapists') || 'Alle Therapeuten'}</SelectItem>
               {therapists?.map((tItem: any) => (
                 <SelectItem key={tItem.id} value={tItem.id}>
-                  {tItem.profiles?.full_name || "Therapeut"}
+                  {tItem.profiles?.full_name || tItem.bio || tItem.specialization || "Therapeut"}
                 </SelectItem>
               ))}
             </SelectContent>

@@ -140,7 +140,11 @@
     "filter": {
       "all": "All Patients",
       "active": "Active Patients",
-      "discharged": "Discharged / Inactive"
+      "discharged": "Discharged / Inactive",
+      "allStations": "All Wards",
+      "allAlerts": "All Medical Alerts",
+      "alertsOnly": "⚠️ With Alerts Only",
+      "resetFilters": "Reset Filters"
     },
     "status": {
       "active": "Active",
@@ -148,10 +152,21 @@
       "discharge": "Discharge Patient",
       "reactivate": "Reactivate Patient"
     },
+    "alerts": {
+      "none": "No Alert",
+      "noneShort": "No Alert",
+      "beiPflegeMelden": "❗ Report to Nursing",
+      "schlechterAz": "🔺 Poor Condition / Infection",
+      "both": "🔺+❗ Both Medical Alerts",
+      "updated": "Medical alert updated.",
+      "stationUpdated": "Ward updated."
+    },
     "form": {
       "demographics": "Demographics",
       "firstName": "First Name",
       "lastName": "Last Name",
+      "station": "Ward / Station",
+      "medicalAlert": "Medical Alert Status",
       "dob": "Date of Birth",
       "status": "Status",
       "gender": {
@@ -192,6 +207,9 @@
     },
     "table": {
       "name": "Name",
+      "station": "Ward",
+      "alerts": "Alerts",
+      "contact": "Contact",
       "dob": "Date of Birth",
       "phone": "Phone",
       "email": "Email",

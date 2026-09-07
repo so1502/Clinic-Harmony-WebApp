@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { Plus, Pencil, Trash2, Loader2, Search, X, UserX, UserCheck, Archive } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Search, X, UserX, UserCheck, Archive, Filter, FilterX, Building2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 import type { Patient } from "@/types";
@@ -34,6 +34,8 @@ import {
 const patientSchema = (t: any) => z.object({
   first_name: z.string().min(2, t('common.required')),
   last_name: z.string().min(2, t('common.required')),
+  station: z.string().optional(),
+  medical_alert: z.string().optional(),
   email: z.string().email().or(z.literal("")).optional(),
   phone: z.string().optional(),
   date_of_birth: z.string().optional(),
@@ -67,12 +69,16 @@ export default function PatientsPage() {
   // Search and Filter states
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "discharged">("active");
+  const [stationFilter, setStationFilter] = useState<string>("all");
+  const [alertFilter, setAlertFilter] = useState<string>("all");
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting } } = useForm<any>({
     resolver: zodResolver(patientSchema(t)),
     defaultValues: {
       first_name: "",
       last_name: "",
+      station: "Neuro I",
+      medical_alert: "none",
       email: "",
       phone: "",
       date_of_birth: "",
@@ -92,6 +98,36 @@ export default function PatientsPage() {
       preferred_language: "de",
       notes: "",
       is_active: true,
+    }
+  });
+
+  // Quick mutation to change medical_alert directly from dropdowns
+  const updateAlertMutation = useMutation({
+    mutationFn: async ({ id, medical_alert }: { id: string; medical_alert: string }) => {
+      const { error } = await supabase.from("patients").update({ medical_alert }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
+      toast.success(t('patients.alerts.updated') || "Warnhinweis aktualisiert.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Fehler beim Aktualisieren.");
+    }
+  });
+
+  // Quick mutation to change station directly from dropdowns
+  const updateStationMutation = useMutation({
+    mutationFn: async ({ id, station }: { id: string; station: string }) => {
+      const { error } = await supabase.from("patients").update({ station }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
+      toast.success(t('patients.alerts.stationUpdated') || "Station aktualisiert.");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Fehler beim Aktualisieren.");
     }
   });
 
@@ -145,6 +181,8 @@ export default function PatientsPage() {
         full_name: `${values.first_name} ${values.last_name}`,
         first_name: values.first_name,
         last_name: values.last_name,
+        station: values.station || "Neuro I",
+        medical_alert: values.medical_alert || "none",
         email: values.email || null,
         phone: values.phone || null,
         date_of_birth: values.date_of_birth || null,
@@ -250,6 +288,8 @@ export default function PatientsPage() {
     reset({
       first_name: patient.first_name || "",
       last_name: patient.last_name || "",
+      station: patient.station || "Neuro I",
+      medical_alert: patient.medical_alert || "none",
       email: patient.email || "",
       phone: patient.phone || "",
       date_of_birth: patient.date_of_birth || "",
@@ -278,6 +318,8 @@ export default function PatientsPage() {
     reset({
       first_name: "",
       last_name: "",
+      station: "Neuro I",
+      medical_alert: "none",
       email: "",
       phone: "",
       date_of_birth: "",
@@ -301,13 +343,28 @@ export default function PatientsPage() {
     setIsDialogOpen(true);
   };
 
-  // Filtered patients list based on search query and status tab
+  // Filtered patients list based on search query, station, alerts, and status tab
   const filteredPatients = patients?.filter((patient) => {
     const isInactive = patient.is_active === false || patient.status === "discharged" || patient.status === "inactive";
     
     // Status filter
     if (statusFilter === "active" && isInactive) return false;
     if (statusFilter === "discharged" && !isInactive) return false;
+
+    // Station filter
+    if (stationFilter !== "all") {
+      const pStation = patient.station || "Neuro I";
+      if (pStation !== stationFilter) return false;
+    }
+
+    // Alert filter
+    if (alertFilter === "alerts_only") {
+      if (!patient.medical_alert || patient.medical_alert === "none") return false;
+    } else if (alertFilter === "bei_pflege_melden") {
+      if (patient.medical_alert !== "bei_pflege_melden" && patient.medical_alert !== "both") return false;
+    } else if (alertFilter === "schlechter_az_infektion") {
+      if (patient.medical_alert !== "schlechter_az_infektion" && patient.medical_alert !== "both") return false;
+    }
 
     // Search query filter
     if (!searchQuery.trim()) return true;
@@ -346,49 +403,98 @@ export default function PatientsPage() {
         </Button>
       </div>
 
-      {/* Search and Status Filter Controls */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white p-4 rounded-lg border shadow-sm">
-        {/* Search Bar */}
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t('patients.searchPlaceholder')}
-            className="pl-9 pr-9"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+      {/* Search and Filter Controls Bar */}
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-center gap-3 flex-1">
+          {/* Search Bar */}
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t('patients.searchPlaceholder')}
+              className="pl-9 pr-9 h-9 text-xs"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Station Filter */}
+          <div className="relative w-full sm:w-44 flex items-center">
+            <Building2 className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500 pointer-events-none" />
+            <select
+              value={stationFilter}
+              onChange={(e) => setStationFilter(e.target.value)}
+              className="h-9 w-full rounded-md border border-input bg-white pl-8 pr-3 text-xs font-medium shadow-sm transition-colors focus:ring-1 focus:ring-indigo-500"
             >
-              <X className="h-4 w-4" />
-            </button>
+              <option value="all">{t('patients.filter.allStations') || "Alle Stationen"}</option>
+              <option value="Neuro I">Station Neuro I</option>
+              <option value="Neuro II">Station Neuro II</option>
+              <option value="Neuro III">Station Neuro III</option>
+            </select>
+          </div>
+
+          {/* Alert Filter */}
+          <div className="relative w-full sm:w-52 flex items-center">
+            <AlertTriangle className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-amber-500 pointer-events-none" />
+            <select
+              value={alertFilter}
+              onChange={(e) => setAlertFilter(e.target.value)}
+              className="h-9 w-full rounded-md border border-input bg-white pl-8 pr-3 text-xs font-medium shadow-sm transition-colors focus:ring-1 focus:ring-indigo-500"
+            >
+              <option value="all">{t('patients.filter.allAlerts') || "Alle Warnhinweise"}</option>
+              <option value="alerts_only">{t('patients.filter.alertsOnly') || "⚠️ Nur mit Warnhinweisen"}</option>
+              <option value="bei_pflege_melden">{t('patients.alerts.beiPflegeMelden') || "❗ Bei Pflege melden"}</option>
+              <option value="schlechter_az_infektion">{t('patients.alerts.schlechterAz') || "🔺 Schlechter AZ / Infekt"}</option>
+            </select>
+          </div>
+
+          {/* Reset Filters */}
+          {(stationFilter !== "all" || alertFilter !== "all" || searchQuery !== "") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setStationFilter("all");
+                setAlertFilter("all");
+                setSearchQuery("");
+              }}
+              className="h-9 text-xs text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-2.5 gap-1 shrink-0"
+            >
+              <FilterX className="h-3.5 w-3.5" />
+              {t('patients.filter.resetFilters') || "Filter zurücksetzen"}
+            </Button>
           )}
         </div>
 
         {/* Status Filter Tabs */}
-        <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-md text-sm font-medium text-slate-600">
+        <div className="flex items-center space-x-1 bg-slate-100 p-1 rounded-lg text-xs font-medium text-slate-600 shrink-0 self-start lg:self-auto">
           <button
             onClick={() => setStatusFilter("active")}
-            className={`px-3 py-1.5 rounded-sm transition-colors ${
-              statusFilter === "active" ? "bg-white text-slate-900 shadow-sm" : "hover:text-slate-900"
+            className={`px-3 py-1 rounded-md transition-all ${
+              statusFilter === "active" ? "bg-white text-slate-900 font-semibold shadow-sm" : "hover:text-slate-900"
             }`}
           >
             {t('patients.filter.active')}
           </button>
           <button
             onClick={() => setStatusFilter("discharged")}
-            className={`px-3 py-1.5 rounded-sm transition-colors ${
-              statusFilter === "discharged" ? "bg-white text-slate-900 shadow-sm" : "hover:text-slate-900"
+            className={`px-3 py-1 rounded-md transition-all ${
+              statusFilter === "discharged" ? "bg-white text-slate-900 font-semibold shadow-sm" : "hover:text-slate-900"
             }`}
           >
             {t('patients.filter.discharged')}
           </button>
           <button
             onClick={() => setStatusFilter("all")}
-            className={`px-3 py-1.5 rounded-sm transition-colors ${
-              statusFilter === "all" ? "bg-white text-slate-900 shadow-sm" : "hover:text-slate-900"
+            className={`px-3 py-1 rounded-md transition-all ${
+              statusFilter === "all" ? "bg-white text-slate-900 font-semibold shadow-sm" : "hover:text-slate-900"
             }`}
           >
             {t('patients.filter.all')}
@@ -402,7 +508,9 @@ export default function PatientsPage() {
           <TableHeader>
             <TableRow className="bg-slate-50">
               <TableHead>{t('patients.table.name')}</TableHead>
-              <TableHead>{t('patients.table.contact')}</TableHead>
+              <TableHead>{t('patients.table.station') || 'Station'}</TableHead>
+              <TableHead>{t('patients.table.alerts') || 'Warnhinweise'}</TableHead>
+              <TableHead>{t('patients.table.contact') || 'Kontakt'}</TableHead>
               <TableHead>{t('patients.table.dob')}</TableHead>
               <TableHead>{t('patients.table.status')}</TableHead>
               <TableHead className="text-right">{t('patients.table.actions')}</TableHead>
@@ -411,19 +519,22 @@ export default function PatientsPage() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
+                <TableCell colSpan={7} className="h-24 text-center">
                   <Loader2 className="mx-auto h-6 w-6 animate-spin text-slate-300" />
                 </TableCell>
               </TableRow>
             ) : filteredPatients?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center text-slate-500">
+                <TableCell colSpan={7} className="h-24 text-center text-slate-500">
                   {t('patients.messages.empty')}
                 </TableCell>
               </TableRow>
             ) : (
               filteredPatients?.map((patient) => {
                 const isDischarged = patient.is_active === false || patient.status === "discharged" || patient.status === "inactive";
+                const isAlertAZ = patient.medical_alert === 'schlechter_az_infektion' || patient.medical_alert === 'both';
+                const isAlertPflege = patient.medical_alert === 'bei_pflege_melden' || patient.medical_alert === 'both';
+
                 return (
                   <TableRow 
                     key={patient.id}
@@ -440,6 +551,37 @@ export default function PatientsPage() {
                           </span>
                         )}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <select
+                        value={patient.station || "Neuro I"}
+                        onChange={(e) => updateStationMutation.mutate({ id: patient.id, station: e.target.value })}
+                        className="h-7 text-xs font-semibold rounded-md border border-indigo-200 bg-indigo-50 text-indigo-700 px-2 py-0.5 shadow-sm cursor-pointer hover:bg-indigo-100 transition-colors"
+                      >
+                        <option value="Neuro I">Neuro I</option>
+                        <option value="Neuro II">Neuro II</option>
+                        <option value="Neuro III">Neuro III</option>
+                      </select>
+                    </TableCell>
+                    <TableCell>
+                      <select
+                        value={patient.medical_alert || "none"}
+                        onChange={(e) => updateAlertMutation.mutate({ id: patient.id, medical_alert: e.target.value })}
+                        className={`h-7 text-xs font-bold rounded-md border px-2 py-0.5 shadow-sm cursor-pointer transition-colors focus:ring-1 focus:ring-indigo-500 ${
+                          patient.medical_alert === 'both' 
+                            ? 'bg-red-100 text-red-900 border-red-300' 
+                            : patient.medical_alert === 'schlechter_az_infektion'
+                            ? 'bg-red-50 text-red-800 border-red-200'
+                            : patient.medical_alert === 'bei_pflege_melden'
+                            ? 'bg-amber-50 text-amber-900 border-amber-300'
+                            : 'bg-white text-slate-500 border-slate-200 font-normal'
+                        }`}
+                      >
+                        <option value="none">{t('patients.alerts.none') || "Kein Warnhinweis"}</option>
+                        <option value="bei_pflege_melden">{t('patients.alerts.beiPflegeMelden') || "❗ Bei Pflege melden"}</option>
+                        <option value="schlechter_az_infektion">{t('patients.alerts.schlechterAz') || "🔺 Schlechter AZ / Infekt"}</option>
+                        <option value="both">{t('patients.alerts.both') || "🔺+❗ Beide Warnhinweise"}</option>
+                      </select>
                     </TableCell>
                     <TableCell className="text-sm text-slate-500">
                       <div>{patient.email || "-"}</div>
@@ -581,10 +723,31 @@ export default function PatientsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="preferred_language">{t('patients.form.language')}</Label>
-                    <Input id="preferred_language" {...register("preferred_language")} placeholder="de / en" />
+                    <Label htmlFor="station">{t('patients.form.station') || "Station"}</Label>
+                    <select
+                      id="station"
+                      {...register("station")}
+                      className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      <option value="Neuro I">Neuro I</option>
+                      <option value="Neuro II">Neuro II</option>
+                      <option value="Neuro III">Neuro III</option>
+                    </select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="medical_alert">{t('patients.form.medicalAlert') || "Warnhinweis / Status-Alert"}</Label>
+                    <select
+                      id="medical_alert"
+                      {...register("medical_alert")}
+                      className="flex h-9 w-full rounded-md border border-input bg-white px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      <option value="none">{t('patients.alerts.none') || "Kein Warnhinweis"}</option>
+                      <option value="bei_pflege_melden">{t('patients.alerts.beiPflegeMelden') || "❗ Bei Pflege melden"}</option>
+                      <option value="schlechter_az_infektion">{t('patients.alerts.schlechterAz') || "🔺 Schlechter AZ / Infekt"}</option>
+                      <option value="both">{t('patients.alerts.both') || "🔺+❗ Beide Warnhinweise"}</option>
+                    </select>
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="is_active">{t('patients.form.status')}</Label>

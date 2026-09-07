@@ -129,7 +129,11 @@
     "filter": {
       "all": "Alle Patienten",
       "active": "Aktive Patienten",
-      "discharged": "Entlassen / Inaktiv"
+      "discharged": "Entlassen / Inaktiv",
+      "allStations": "Alle Stationen",
+      "allAlerts": "Alle Warnhinweise",
+      "alertsOnly": "⚠️ Nur mit Warnhinweisen",
+      "resetFilters": "Filter zurücksetzen"
     },
     "status": {
       "active": "Aktiv",
@@ -137,10 +141,21 @@
       "discharge": "Patient entlassen",
       "reactivate": "Patient reaktivieren"
     },
+    "alerts": {
+      "none": "Kein Warnhinweis",
+      "noneShort": "Kein Alert",
+      "beiPflegeMelden": "❗ Bei Pflege melden",
+      "schlechterAz": "🔺 Schlechter AZ / Infekt",
+      "both": "🔺+❗ Beide Warnhinweise",
+      "updated": "Warnhinweis aktualisiert.",
+      "stationUpdated": "Station aktualisiert."
+    },
     "form": {
       "demographics": "Stammdaten",
       "firstName": "Vorname",
       "lastName": "Nachname",
+      "station": "Station",
+      "medicalAlert": "Warnhinweis / Status-Alert",
       "dob": "Geburtsdatum",
       "status": "Status",
       "gender": {
@@ -181,6 +196,9 @@
     },
     "table": {
       "name": "Name",
+      "station": "Station",
+      "alerts": "Warnhinweise",
+      "contact": "Kontakt",
       "dob": "Geburtsdatum",
       "phone": "Telefon",
       "email": "E-Mail",

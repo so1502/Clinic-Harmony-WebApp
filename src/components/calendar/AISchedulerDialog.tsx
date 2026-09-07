@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -80,10 +80,7 @@ export function AISchedulerDialog({
   const [webllmPercent, setWebllmPercent] = useState<number>(0);
 
   // Therapy counts & date state
-  const [therapyCounts, setTherapyCounts] = useState<{ [name: string]: number }>({
-    "Physiotherapie": 10,
-    "Ultraschalltherapie": 5,
-  });
+  const [therapyCounts, setTherapyCounts] = useState<{ [name: string]: number }>({});
   const [startDateStr, setStartDateStr] = useState<string>(() => {
     const d = new Date();
     d.setDate(d.getDate() + 1);
@@ -260,12 +257,35 @@ export function AISchedulerDialog({
     enabled: !!activeClinicId && isOpen,
   });
 
-  // Presets configuration
-  const presets = [
-    { text: t("aiScheduler.preset1"), prompt: "10x Physiotherapie und 5x Ultraschalltherapie über die nächsten 3 Wochen" },
-    { text: t("aiScheduler.preset2"), prompt: "5x Lymphdrainage über die nächsten 2 Wochen" },
-    { text: t("aiScheduler.preset3"), prompt: "3x Ganzkörpermassage über die nächste 1 Woche" },
-  ];
+  // Sync therapyCounts when therapyTypes are loaded for the active clinic
+  useEffect(() => {
+    if (therapyTypes && therapyTypes.length > 0) {
+      setTherapyCounts((prev) => {
+        const nextCounts: { [name: string]: number } = {};
+        therapyTypes.forEach((tt: any) => {
+          if (tt?.name) {
+            nextCounts[tt.name] = prev[tt.name] !== undefined ? prev[tt.name] : (tt.name.includes("Physio") ? 5 : 0);
+          }
+        });
+        return nextCounts;
+      });
+    }
+  }, [therapyTypes]);
+
+  // Dynamic Presets based on actual clinic therapy types
+  const presets = useMemo(() => {
+    if (!therapyTypes || therapyTypes.length === 0) return [];
+    const names = therapyTypes.map((tt: any) => tt.name).filter(Boolean);
+    const p1 = names.slice(0, 2).map((n) => `5x ${n}`).join(" und ");
+    const p2 = names[0] ? `3x ${names[0]} über die nächsten 2 Wochen` : "";
+    const p3 = names[1] ? `5x ${names[1]} mit Ruhetagen` : "";
+    
+    return [
+      { text: t("aiScheduler.preset1") || "Standard Reha-Plan", prompt: `${p1} über die nächsten 3 Wochen` },
+      p2 ? { text: t("aiScheduler.preset2") || "Fokussierte Therapie", prompt: p2 } : null,
+      p3 ? { text: t("aiScheduler.preset3") || "Intensivblock", prompt: p3 } : null,
+    ].filter(Boolean) as { text: string; prompt: string }[];
+  }, [therapyTypes, t]);
 
   // Date local ISO formatting helper (without timezone shift/Z suffix)
   const formatLocalISO = (date: Date) => {
@@ -1275,7 +1295,7 @@ Format: {"appointments":[{"start_time":"2026-06-15T09:00:00","end_time":"2026-06
 
                     {/* List of Therapy Types with Number Input (Arrows) */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1">
-                      {Array.from(new Set(["Physiotherapie", "Ultraschalltherapie", "Lymphdrainage", "Massage", ...(therapyTypes?.map((tt: any) => tt?.name).filter(Boolean) || [])])).map((tName) => {
+                      {(therapyTypes?.map((tt: any) => tt?.name).filter(Boolean) || []).map((tName) => {
                         const count = therapyCounts[tName] || 0;
                         return (
                           <div key={tName} className="flex items-center justify-between p-2 bg-slate-50 border border-slate-200 rounded-lg">

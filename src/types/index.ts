@@ -104,6 +104,8 @@ export interface Patient {
   emergency_contact_phone: string | null;
   preferred_language: string | null;
   notes: string | null;
+  station?: string | null;
+  medical_alert?: string | null;
   is_active?: boolean;
   status?: string;
   created_at: string;
